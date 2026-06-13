@@ -1,0 +1,10 @@
+{
+  "name": "monster-city-1v4",
+  "private": true,
+  "scripts": {
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
