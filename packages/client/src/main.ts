@@ -1,5 +1,5 @@
 import { Application } from 'pixi.js';
-import { createInitialState, step, type GameState, type InputMap } from '@game/shared';
+import { botThink, createInitialState, step, type GameState, type InputMap } from '@game/shared';
 import { COLORS, DEFAULT_BUILD } from './config';
 import { TICK_MS, renderAlpha, stepsToRun } from './loop';
 import { actorIdForSide, inputFromKeys, type Side } from './control';
@@ -36,8 +36,12 @@ async function startGame(side: Side): Promise<void> {
 
     for (let i = 0; i < steps; i++) {
       const inputs: InputMap = {};
-      // Only the controlled actor sends input this plan; others stand still (bots = Plan 4).
+      // The human controls one actor; bots fill every other living seat.
       inputs[controlledId] = inputFromKeys(controlledId, keyboard.state(), DEFAULT_BUILD);
+      for (const actor of [curr.monster, ...curr.heroes]) {
+        if (actor.id === controlledId || !actor.alive) continue;
+        inputs[actor.id] = botThink(curr, actor.id);
+      }
       prev = curr;
       curr = step(curr, inputs);
     }
