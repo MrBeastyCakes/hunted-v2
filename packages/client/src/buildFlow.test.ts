@@ -1,4 +1,11 @@
-import { BLUEPRINTS, buildFlowReducer, canAfford, type BuildFlow } from './buildFlow';
+import {
+  BLUEPRINTS,
+  buildFlowReducer,
+  canAfford,
+  isDoubleTap,
+  placingTapAction,
+  type BuildFlow,
+} from './buildFlow';
 import { createInitialState } from '@game/shared';
 
 test('BLUEPRINTS are the three buildable structures', () => {
@@ -52,4 +59,36 @@ test('canAfford compares materials against the role-adjusted cost', () => {
   expect(canAfford(s, builder.role, 'tower')).toBe(false);
   s.resources.materials = 1000;
   expect(canAfford(s, builder.role, 'tower')).toBe(true);
+});
+
+test('isDoubleTap is false without a previous tap', () => {
+  expect(isDoubleTap(undefined, undefined, 100, { x: 0, y: 0 }, 300, 30)).toBe(false);
+});
+
+test('isDoubleTap is true for two close, quick taps', () => {
+  expect(isDoubleTap(100, { x: 10, y: 10 }, 350, { x: 12, y: 11 }, 300, 30)).toBe(true);
+});
+
+test('isDoubleTap is false when too slow or too far', () => {
+  expect(isDoubleTap(100, { x: 10, y: 10 }, 500, { x: 12, y: 11 }, 300, 30)).toBe(false);
+  expect(isDoubleTap(100, { x: 10, y: 10 }, 350, { x: 80, y: 80 }, 300, 30)).toBe(false);
+});
+
+test('placingTapAction: tapping the campfire cancels', () => {
+  expect(placingTapAction({ x: 5, y: 5 }, false, { x: 9, y: 9 }, true, 3.5)).toEqual({ t: 'cancel' });
+});
+
+test('placingTapAction: a double-tap places the ghost', () => {
+  expect(placingTapAction({ x: 5, y: 5 }, true, undefined, false, 3.5)).toEqual({
+    t: 'placeGhost',
+    point: { x: 5, y: 5 },
+  });
+});
+
+test('placingTapAction: a single tap on the ghost confirms', () => {
+  expect(placingTapAction({ x: 9.2, y: 9 }, false, { x: 9, y: 9 }, false, 3.5)).toEqual({ t: 'confirm' });
+});
+
+test('placingTapAction: a single tap elsewhere does nothing', () => {
+  expect(placingTapAction({ x: 1, y: 1 }, false, { x: 9, y: 9 }, false, 3.5)).toEqual({ t: 'none' });
 });
