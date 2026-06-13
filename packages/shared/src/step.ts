@@ -1,19 +1,25 @@
+import { combatSystem } from './systems/combat';
+import { economySystem } from './systems/economy';
+import { evolutionSystem } from './systems/evolution';
+import { buildingSystem } from './systems/building';
+import { feedingSystem } from './systems/feeding';
 import { movementSystem } from './systems/movement';
+import { winConditionSystem } from './systems/winCondition';
 import type { GameState, InputMap } from './types';
 
-// Pure fixed-timestep advance: clone, run systems on the clone, return it.
-// Plan 2 adds feeding/evolution/combat/building/winCondition systems here,
-// each as one import + one call line — order matters and is fixed.
+// Pure fixed-timestep advance: clone, run systems in order on the clone, return it.
+// Order matters: feeding/combat add XP before evolution reads it; winCondition runs last.
 export function step(state: GameState, inputs: InputMap): GameState {
   const next: GameState = structuredClone(state);
   if (next.phase !== 'playing') return next;
 
   movementSystem(next, inputs);
-  // (Plan 2) feedingSystem(next, inputs);
-  // (Plan 2) evolutionSystem(next);
-  // (Plan 2) combatSystem(next, inputs);
-  // (Plan 2) buildingSystem(next, inputs);
-  // (Plan 2) winConditionSystem(next);
+  feedingSystem(next, inputs);
+  economySystem(next);
+  buildingSystem(next, inputs);
+  combatSystem(next, inputs);
+  evolutionSystem(next);
+  winConditionSystem(next);
 
   next.tick += 1;
   return next;
