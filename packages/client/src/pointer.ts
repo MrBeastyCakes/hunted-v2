@@ -30,3 +30,38 @@ export function pickTarget(state: GameState, world: Vec2, radius: number): Pick 
 
   return best;
 }
+
+export type TapIntent =
+  | { kind: 'move'; point: Vec2 }
+  | { kind: 'feed'; nodeId: EntityId }
+  | { kind: 'attack'; point: Vec2 }
+  | { kind: 'spectate'; actorId: EntityId };
+
+// Maps a tapped world point to an intent, given who the player controls.
+export function resolveTapIntent(
+  state: GameState,
+  controlledId: EntityId,
+  world: Vec2,
+  pickRadius: number,
+): TapIntent {
+  const controlled = findActor(state, controlledId);
+  const spectating = !controlled || !controlled.alive;
+  const pick = pickTarget(state, world, pickRadius);
+
+  if (spectating) {
+    if (pick && (pick.kind === 'hero' || pick.kind === 'monster')) {
+      return { kind: 'spectate', actorId: pick.id };
+    }
+    return { kind: 'move', point: world };
+  }
+
+  const isMonster = controlledId === state.monster.id;
+  if (pick) {
+    if (isMonster && pick.kind === 'wildlife') return { kind: 'feed', nodeId: pick.id };
+    if (isMonster && (pick.kind === 'building' || pick.kind === 'hero')) {
+      return { kind: 'attack', point: pick.pos };
+    }
+    if (!isMonster && pick.kind === 'monster') return { kind: 'attack', point: pick.pos };
+  }
+  return { kind: 'move', point: world };
+}

@@ -1,4 +1,4 @@
-import { findActor, pickTarget } from './pointer';
+import { findActor, pickTarget, resolveTapIntent } from './pointer';
 import { createInitialState } from '@game/shared';
 
 test('findActor returns the monster and heroes by id, undefined otherwise', () => {
@@ -35,4 +35,40 @@ test('pickTarget ignores dead actors and depleted wildlife', () => {
   node.amount = 0;
   expect(pickTarget(s, { ...s.monster.pos }, 3.5)).toBeUndefined();
   expect(pickTarget(s, { ...node.pos }, 3.5)).toBeUndefined();
+});
+
+test('monster tapping a wildlife node yields a feed intent', () => {
+  const s = createInitialState(1);
+  const node = s.map.wildlifeNodes[0];
+  const intent = resolveTapIntent(s, s.monster.id, { ...node.pos }, 3.5);
+  expect(intent).toEqual({ kind: 'feed', nodeId: node.id });
+});
+
+test('monster tapping a building yields an attack intent at its position', () => {
+  const s = createInitialState(1);
+  const core = s.buildings.find((b) => b.type === 'core')!;
+  const intent = resolveTapIntent(s, s.monster.id, { ...core.pos }, 3.5);
+  expect(intent).toEqual({ kind: 'attack', point: core.pos });
+});
+
+test('a hero tapping the monster yields an attack intent', () => {
+  const s = createInitialState(1);
+  const hero = s.heroes[0];
+  const intent = resolveTapIntent(s, hero.id, { ...s.monster.pos }, 3.5);
+  expect(intent).toEqual({ kind: 'attack', point: s.monster.pos });
+});
+
+test('tapping open ground yields a move intent to that point', () => {
+  const s = createInitialState(1);
+  const intent = resolveTapIntent(s, s.heroes[0].id, { x: 2, y: 98 }, 3.5);
+  expect(intent).toEqual({ kind: 'move', point: { x: 2, y: 98 } });
+});
+
+test('a dead controlled hero tapping an actor yields a spectate intent', () => {
+  const s = createInitialState(1);
+  const hero = s.heroes[0];
+  hero.alive = false;
+  const ally = s.heroes[1];
+  const intent = resolveTapIntent(s, hero.id, { ...ally.pos }, 3.5);
+  expect(intent).toEqual({ kind: 'spectate', actorId: ally.id });
 });
