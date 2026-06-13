@@ -17,3 +17,15 @@ export function worldToScreen(
     y: origin.y + (world.x + world.y) * (tileH / 2),
   };
 }
+
+// Inverse of worldToScreen: recover a world point from a screen point.
+export function screenToWorld(
+  screen: ScreenPoint,
+  tileW: number,
+  tileH: number,
+  origin: ScreenPoint,
+): Vec2 {
+  const dx = screen.x - origin.x;
+  const dy = screen.y - origin.y;
+  return { x: dx / tileW + dy / tileH, y: dy / tileH - dx / tileW };
+}

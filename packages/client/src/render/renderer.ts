@@ -17,7 +17,9 @@ export class GameRenderer {
   private readonly g = new Graphics();
   private readonly hud: Text;
   private readonly banner: Text;
+  private readonly campfireLabel: Text;
   private cameraTargetId: number;
+  private lastOrigin: ScreenPoint = { x: 0, y: 0 };
 
   constructor(
     private readonly app: Application,
@@ -34,10 +36,18 @@ export class GameRenderer {
     this.banner = new Text({ text: '', style: { fill: 0xffffff, fontSize: 40, fontWeight: 'bold' } });
     this.banner.anchor.set(0.5);
     this.app.stage.addChild(this.banner);
+
+    this.campfireLabel = new Text({ text: 'Campfire', style: { fill: 0xffd24d, fontSize: 12 } });
+    this.campfireLabel.anchor.set(0.5, 1);
+    this.app.stage.addChild(this.campfireLabel);
   }
 
   setCameraTarget(id: number): void {
     this.cameraTargetId = id;
+  }
+
+  cameraOrigin(): ScreenPoint {
+    return this.lastOrigin;
   }
 
   // prev/curr are consecutive sim states; alpha is 0..1 progress between them.
@@ -45,13 +55,14 @@ export class GameRenderer {
     const g = this.g;
     g.clear();
 
-    const screenW = this.app.renderer.width;
-    const screenH = this.app.renderer.height;
+    const screenW = this.app.screen.width;
+    const screenH = this.app.screen.height;
 
     // Camera: center the controlled actor (use its interpolated position).
     const controlledPos = this.interpPos(prev, curr, this.cameraTargetId, alpha) ?? curr.monster.pos;
     const camIso = worldToScreen(controlledPos, TILE_W, TILE_H, { x: 0, y: 0 });
     const origin: ScreenPoint = { x: screenW / 2 - camIso.x, y: screenH / 2 - camIso.y };
+    this.lastOrigin = origin;
 
     const project = (p: Vec2) => worldToScreen(p, TILE_W, TILE_H, origin);
 
@@ -72,6 +83,16 @@ export class GameRenderer {
       const size = b.type === 'core' ? 16 : 11;
       g.rect(p.x - size / 2, p.y - size, size, size).fill(BUILDING_COLOR[b.type]);
       this.hpBar(p.x, p.y - size - 6, b.health.hp / b.health.maxHp);
+    }
+
+    // "Campfire" label on the core (its level-1 name).
+    const core = curr.buildings.find((b) => b.type === 'core');
+    if (core) {
+      const cp = project(core.pos);
+      this.campfireLabel.position.set(cp.x, cp.y - 22);
+      this.campfireLabel.visible = true;
+    } else {
+      this.campfireLabel.visible = false;
     }
 
     // Heroes.

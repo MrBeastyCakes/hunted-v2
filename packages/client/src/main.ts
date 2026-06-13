@@ -1,10 +1,12 @@
 import { Application } from 'pixi.js';
 import { botThink, createInitialState, step, type GameState, type InputMap } from '@game/shared';
-import { COLORS, DEFAULT_BUILD } from './config';
+import { COLORS, DEFAULT_BUILD, MOVE_ARRIVAL_EPS, PICK_RADIUS, TILE_H, TILE_W } from './config';
 import { TICK_MS, renderAlpha, stepsToRun } from './loop';
 import { actorIdForSide, inputFromKeys, type Side } from './control';
 import { Keyboard } from './input/keyboard';
 import { GameRenderer } from './render/renderer';
+import { screenToWorld } from './render/iso';
+import { applyIntent, controlToInput, resolveTapIntent, type PointerControl } from './pointer';
 import { isActorAlive, nextSpectateTarget, spectatableIds } from './spectate';
 
 async function startGame(side: Side): Promise<void> {
@@ -12,7 +14,12 @@ async function startGame(side: Side): Promise<void> {
   if (menu) menu.style.display = 'none';
 
   const app = new Application();
-  await app.init({ background: COLORS.background, resizeTo: window });
+  await app.init({
+    background: COLORS.background,
+    resizeTo: window,
+    resolution: window.devicePixelRatio || 1,
+    autoDensity: true,
+  });
   document.getElementById('app')!.appendChild(app.canvas);
 
   let prev: GameState = createInitialState(Date.now() % 1_000_000);
@@ -26,6 +33,22 @@ async function startGame(side: Side): Promise<void> {
 
   let spectating = false;
   let cameraTargetId = controlledId;
+  let control: PointerControl = {};
+
+  // Tap/click to move and interact (works for touch and mouse).
+  app.canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const rect = app.canvas.getBoundingClientRect();
+    const screen = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const world = screenToWorld(screen, TILE_W, TILE_H, renderer.cameraOrigin());
+    const intent = resolveTapIntent(curr, controlledId, world, PICK_RADIUS);
+    if (intent.kind === 'spectate') {
+      cameraTargetId = intent.actorId;
+      renderer.setCameraTarget(cameraTargetId);
+    } else {
+      control = applyIntent(control, intent);
+    }
+  });
 
   // Edge-triggered cycle key, active only while spectating.
   window.addEventListener('keydown', (e) => {
@@ -51,7 +74,11 @@ async function startGame(side: Side): Promise<void> {
       const inputs: InputMap = {};
       // The human controls one actor while alive; bots fill every other living seat.
       if (isActorAlive(curr, controlledId)) {
-        inputs[controlledId] = inputFromKeys(controlledId, keyboard.state(), DEFAULT_BUILD);
+        const k = keyboard.state();
+        const keyboardActive = k.up || k.down || k.left || k.right || k.feed || k.build;
+        inputs[controlledId] = keyboardActive
+          ? inputFromKeys(controlledId, k, DEFAULT_BUILD)
+          : controlToInput(curr, controlledId, control, MOVE_ARRIVAL_EPS);
       }
       for (const actor of [curr.monster, ...curr.heroes]) {
         if (actor.id === controlledId || !actor.alive) continue;

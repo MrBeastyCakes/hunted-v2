@@ -21,3 +21,7 @@ export const COLORS = {
 
 // Default structure built when the build key is pressed (richer menu deferred).
 export const DEFAULT_BUILD = 'tower' as const;
+
+// Pointer-control tuning.
+export const PICK_RADIUS = 3.5; // world units: how close a tap must be to grab a target
+export const MOVE_ARRIVAL_EPS = 0.6; // stop moving when within this distance of the target

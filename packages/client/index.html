@@ -2,11 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Monster City 1v4</title>
     <style>
-      html, body { margin: 0; height: 100%; background: #11151c; font-family: system-ui, sans-serif; color: #e6edf3; }
+      html, body { margin: 0; height: 100%; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; background: #11151c; font-family: system-ui, sans-serif; color: #e6edf3; }
       #app { position: fixed; inset: 0; }
+      #app, #app canvas { touch-action: none; }
       #menu {
         position: fixed; inset: 0; display: flex; flex-direction: column;
         align-items: center; justify-content: center; gap: 12px; background: #11151cdd; z-index: 10;
