@@ -1,0 +1,21 @@
+{
+  "name": "@game/client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@game/shared": "workspace:*",
+    "pixi.js": "^8.2.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

@@ -1,0 +1,128 @@
+import { Application, Container, Graphics, Text } from 'pixi.js';
+import type { Building, Entity, GameState, Vec2 } from '@game/shared';
+import { COLORS, TILE_H, TILE_W } from '../config';
+import { worldToScreen, type ScreenPoint } from './iso';
+import { lerpVec } from './interpolate';
+
+const BUILDING_COLOR: Record<Building['type'], number> = {
+  core: COLORS.core,
+  tower: COLORS.tower,
+  generator: COLORS.generator,
+  workshop: COLORS.workshop,
+};
+
+// Draws GameState each frame using immediate-mode Graphics. Few entities -> redraw is cheap.
+export class GameRenderer {
+  private readonly world = new Container();
+  private readonly g = new Graphics();
+  private readonly hud: Text;
+  private readonly banner: Text;
+
+  constructor(
+    private readonly app: Application,
+    private readonly controlledId: number,
+  ) {
+    this.world.addChild(this.g);
+    this.app.stage.addChild(this.world);
+
+    this.hud = new Text({ text: '', style: { fill: 0xe6edf3, fontSize: 14 } });
+    this.hud.position.set(12, 12);
+    this.app.stage.addChild(this.hud);
+
+    this.banner = new Text({ text: '', style: { fill: 0xffffff, fontSize: 40, fontWeight: 'bold' } });
+    this.banner.anchor.set(0.5);
+    this.app.stage.addChild(this.banner);
+  }
+
+  // prev/curr are consecutive sim states; alpha is 0..1 progress between them.
+  render(prev: GameState, curr: GameState, alpha: number): void {
+    const g = this.g;
+    g.clear();
+
+    const screenW = this.app.renderer.width;
+    const screenH = this.app.renderer.height;
+
+    // Camera: center the controlled actor (use its interpolated position).
+    const controlledPos = this.interpPos(prev, curr, this.controlledId, alpha) ?? curr.monster.pos;
+    const camIso = worldToScreen(controlledPos, TILE_W, TILE_H, { x: 0, y: 0 });
+    const origin: ScreenPoint = { x: screenW / 2 - camIso.x, y: screenH / 2 - camIso.y };
+
+    const project = (p: Vec2) => worldToScreen(p, TILE_W, TILE_H, origin);
+
+    // Ground diamond (map bounds corners).
+    const c0 = project({ x: 0, y: 0 });
+    const c1 = project({ x: curr.map.width, y: 0 });
+    const c2 = project({ x: curr.map.width, y: curr.map.height });
+    const c3 = project({ x: 0, y: curr.map.height });
+    g.poly([c0.x, c0.y, c1.x, c1.y, c2.x, c2.y, c3.x, c3.y]).fill(COLORS.ground);
+
+    // Resource + wildlife nodes.
+    for (const n of curr.map.wildlifeNodes) this.dot(project(n.pos), 5, COLORS.wildlife);
+    for (const n of curr.map.resourceNodes) this.dot(project(n.pos), 5, COLORS.resource);
+
+    // Buildings.
+    for (const b of curr.buildings) {
+      const p = project(b.pos);
+      const size = b.type === 'core' ? 16 : 11;
+      g.rect(p.x - size / 2, p.y - size, size, size).fill(BUILDING_COLOR[b.type]);
+      this.hpBar(p.x, p.y - size - 6, b.health.hp / b.health.maxHp);
+    }
+
+    // Heroes.
+    for (const h of curr.heroes) {
+      if (!h.alive) continue;
+      const p = project(this.interpEntity(prev, curr, h, alpha));
+      const color = h.id === this.controlledId ? COLORS.heroControlled : COLORS.hero;
+      this.dot(p, 7, color);
+      this.hpBar(p.x, p.y - 14, h.health.hp / h.health.maxHp);
+    }
+
+    // Monster.
+    if (curr.monster.alive) {
+      const p = project(this.interpEntity(prev, curr, curr.monster, alpha));
+      const radius = 8 + (curr.monster.evolution?.stage ?? 1) * 2;
+      this.dot(p, radius, COLORS.monster);
+      this.hpBar(p.x, p.y - radius - 6, curr.monster.health.hp / curr.monster.health.maxHp);
+    }
+
+    // HUD.
+    const m = curr.monster;
+    this.hud.text =
+      `materials: ${Math.floor(curr.resources.materials)}\n` +
+      `monster: stage ${m.evolution?.stage ?? 1}  hp ${Math.ceil(m.health.hp)}/${m.health.maxHp}  xp ${Math.floor(m.evolution?.xp ?? 0)}\n` +
+      `tick: ${curr.tick}`;
+
+    // Banner on game end.
+    this.banner.position.set(screenW / 2, screenH / 2);
+    if (curr.phase === 'monsterWon') this.banner.text = 'MONSTER WINS';
+    else if (curr.phase === 'buildersWon') this.banner.text = 'BUILDERS WIN';
+    else this.banner.text = '';
+  }
+
+  private dot(p: ScreenPoint, r: number, color: number): void {
+    this.g.circle(p.x, p.y, r).fill(color);
+  }
+
+  private hpBar(cx: number, top: number, frac: number): void {
+    const w = 20;
+    const clamped = Math.max(0, Math.min(1, frac));
+    this.g.rect(cx - w / 2, top, w, 3).fill(COLORS.hpBack);
+    this.g.rect(cx - w / 2, top, w * clamped, 3).fill(COLORS.hpFill);
+  }
+
+  private interpEntity(prev: GameState, curr: GameState, entity: Entity, alpha: number): Vec2 {
+    return this.interpPos(prev, curr, entity.id, alpha) ?? entity.pos;
+  }
+
+  private interpPos(prev: GameState, curr: GameState, id: number, alpha: number): Vec2 | undefined {
+    const cur = findEntity(curr, id);
+    if (!cur) return undefined;
+    const old = findEntity(prev, id);
+    return old ? lerpVec(old.pos, cur.pos, alpha) : cur.pos;
+  }
+}
+
+function findEntity(state: GameState, id: number): Entity | undefined {
+  if (state.monster.id === id) return state.monster;
+  return state.heroes.find((h) => h.id === id);
+}
