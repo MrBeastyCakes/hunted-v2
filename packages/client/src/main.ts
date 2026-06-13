@@ -1,12 +1,45 @@
 import { Application } from 'pixi.js';
-import { botThink, createInitialState, step, type GameState, type InputMap } from '@game/shared';
-import { COLORS, DEFAULT_BUILD, MOVE_ARRIVAL_EPS, PICK_RADIUS, TILE_H, TILE_W } from './config';
+import {
+  botThink,
+  buildCost,
+  createInitialState,
+  step,
+  type BuildingType,
+  type GameState,
+  type InputMap,
+} from '@game/shared';
+import {
+  COLORS,
+  DEFAULT_BUILD,
+  DOUBLE_TAP_DIST,
+  DOUBLE_TAP_MS,
+  MOVE_ARRIVAL_EPS,
+  PICK_RADIUS,
+  TILE_H,
+  TILE_W,
+} from './config';
 import { TICK_MS, renderAlpha, stepsToRun } from './loop';
 import { actorIdForSide, inputFromKeys, type Side } from './control';
 import { Keyboard } from './input/keyboard';
 import { GameRenderer } from './render/renderer';
 import { screenToWorld } from './render/iso';
-import { applyIntent, controlToInput, resolveTapIntent, type PointerControl } from './pointer';
+import {
+  applyIntent,
+  controlToInput,
+  findActor,
+  pickTarget,
+  resolveTapIntent,
+  type PointerControl,
+} from './pointer';
+import {
+  BLUEPRINTS,
+  buildFlowReducer,
+  canAfford,
+  isDoubleTap,
+  placingTapAction,
+  type BuildFlow,
+} from './buildFlow';
+import { setPlacingHint, showBuildMenu } from './buildMenu';
 import { isActorAlive, nextSpectateTarget, spectatableIds } from './spectate';
 
 async function startGame(side: Side): Promise<void> {
@@ -34,6 +67,16 @@ async function startGame(side: Side): Promise<void> {
   let spectating = false;
   let cameraTargetId = controlledId;
   let control: PointerControl = {};
+  let flow: BuildFlow = { phase: 'idle' };
+  let pendingBuild: { buildType: BuildingType; target: { x: number; y: number } } | undefined;
+  let lastTapMs: number | undefined;
+  let lastTapPos: { x: number; y: number } | undefined;
+
+  const isCampfireHit = (world: { x: number; y: number }): boolean => {
+    const pick = pickTarget(curr, world, PICK_RADIUS);
+    if (!pick || pick.kind !== 'building') return false;
+    return curr.buildings.find((b) => b.id === pick.id)?.type === 'core';
+  };
 
   // Tap/click to move and interact (works for touch and mouse).
   app.canvas.addEventListener('pointerdown', (e) => {
@@ -41,7 +84,55 @@ async function startGame(side: Side): Promise<void> {
     const rect = app.canvas.getBoundingClientRect();
     const screen = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     const world = screenToWorld(screen, TILE_W, TILE_H, renderer.cameraOrigin());
+
+    const now = performance.now();
+    const doubleTap = isDoubleTap(lastTapMs, lastTapPos, now, screen, DOUBLE_TAP_MS, DOUBLE_TAP_DIST);
+    lastTapMs = now;
+    lastTapPos = screen;
+
+    if (flow.phase === 'menu') return; // handled by overlay buttons
+
+    if (flow.phase === 'placing') {
+      const action = placingTapAction(world, doubleTap, flow.ghost, isCampfireHit(world), PICK_RADIUS);
+      if (action.t === 'placeGhost') {
+        flow = buildFlowReducer(flow, { t: 'placeGhost', point: action.point }).flow;
+        renderer.setGhost(flow.ghost, flow.blueprint);
+      } else if (action.t === 'confirm') {
+        const r = buildFlowReducer(flow, { t: 'confirm' });
+        flow = r.flow;
+        renderer.setGhost(undefined);
+        setPlacingHint(false);
+        if (r.build) pendingBuild = r.build;
+      } else if (action.t === 'cancel') {
+        flow = buildFlowReducer(flow, { t: 'cancel' }).flow;
+        renderer.setGhost(undefined);
+        setPlacingHint(false);
+      }
+      return;
+    }
+
+    // idle phase: normal intents
     const intent = resolveTapIntent(curr, controlledId, world, PICK_RADIUS);
+    if (intent.kind === 'openBuildMenu') {
+      flow = buildFlowReducer(flow, { t: 'open' }).flow;
+      const me = findActor(curr, controlledId);
+      const items = BLUEPRINTS.map((type) => ({
+        type,
+        cost: buildCost(me?.role, type),
+        affordable: canAfford(curr, me?.role, type),
+      }));
+      showBuildMenu(
+        items,
+        (type) => {
+          flow = buildFlowReducer(flow, { t: 'select', blueprint: type }).flow;
+          setPlacingHint(true);
+        },
+        () => {
+          flow = buildFlowReducer(flow, { t: 'cancel' }).flow;
+        },
+      );
+      return;
+    }
     if (intent.kind === 'spectate') {
       cameraTargetId = intent.actorId;
       renderer.setCameraTarget(cameraTargetId);
@@ -74,11 +165,22 @@ async function startGame(side: Side): Promise<void> {
       const inputs: InputMap = {};
       // The human controls one actor while alive; bots fill every other living seat.
       if (isActorAlive(curr, controlledId)) {
-        const k = keyboard.state();
-        const keyboardActive = k.up || k.down || k.left || k.right || k.feed || k.build;
-        inputs[controlledId] = keyboardActive
-          ? inputFromKeys(controlledId, k, DEFAULT_BUILD)
-          : controlToInput(curr, controlledId, control, MOVE_ARRIVAL_EPS);
+        if (pendingBuild) {
+          inputs[controlledId] = {
+            actorId: controlledId,
+            move: { x: 0, y: 0 },
+            action: 'build',
+            buildType: pendingBuild.buildType,
+            target: pendingBuild.target,
+          };
+          pendingBuild = undefined;
+        } else {
+          const k = keyboard.state();
+          const keyboardActive = k.up || k.down || k.left || k.right || k.feed || k.build;
+          inputs[controlledId] = keyboardActive
+            ? inputFromKeys(controlledId, k, DEFAULT_BUILD)
+            : controlToInput(curr, controlledId, control, MOVE_ARRIVAL_EPS);
+        }
       }
       for (const actor of [curr.monster, ...curr.heroes]) {
         if (actor.id === controlledId || !actor.alive) continue;

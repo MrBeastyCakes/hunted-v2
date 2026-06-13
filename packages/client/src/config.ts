@@ -25,3 +25,7 @@ export const DEFAULT_BUILD = 'tower' as const;
 // Pointer-control tuning.
 export const PICK_RADIUS = 3.5; // world units: how close a tap must be to grab a target
 export const MOVE_ARRIVAL_EPS = 0.6; // stop moving when within this distance of the target
+
+// Double-tap detection (for placing build ghosts).
+export const DOUBLE_TAP_MS = 300; // max gap between taps
+export const DOUBLE_TAP_DIST = 30; // max screen-pixel movement between taps

@@ -20,6 +20,7 @@ export class GameRenderer {
   private readonly campfireLabel: Text;
   private cameraTargetId: number;
   private lastOrigin: ScreenPoint = { x: 0, y: 0 };
+  private ghost?: { pos: Vec2; type: Building['type'] };
 
   constructor(
     private readonly app: Application,
@@ -48,6 +49,10 @@ export class GameRenderer {
 
   cameraOrigin(): ScreenPoint {
     return this.lastOrigin;
+  }
+
+  setGhost(pos: Vec2 | undefined, type?: Building['type']): void {
+    this.ghost = pos && type ? { pos, type } : undefined;
   }
 
   // prev/curr are consecutive sim states; alpha is 0..1 progress between them.
@@ -83,6 +88,15 @@ export class GameRenderer {
       const size = b.type === 'core' ? 16 : 11;
       g.rect(p.x - size / 2, p.y - size, size, size).fill(BUILDING_COLOR[b.type]);
       this.hpBar(p.x, p.y - size - 6, b.health.hp / b.health.maxHp);
+    }
+
+    // Translucent build ghost during placement.
+    if (this.ghost) {
+      const gp = project(this.ghost.pos);
+      const size = 11;
+      this.g
+        .rect(gp.x - size / 2, gp.y - size, size, size)
+        .fill({ color: BUILDING_COLOR[this.ghost.type], alpha: 0.45 });
     }
 
     // "Campfire" label on the core (its level-1 name).
