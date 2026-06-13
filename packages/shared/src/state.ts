@@ -6,6 +6,7 @@ import {
   MAP_WIDTH,
   MONSTER_SPEED,
   MONSTER_START_HP,
+  STARTING_MATERIALS,
 } from './constants';
 import type {
   Building,
@@ -30,7 +31,7 @@ export function createInitialState(seed: number): GameState {
     speed: MONSTER_SPEED,
     health: { hp: MONSTER_START_HP, maxHp: MONSTER_START_HP },
     alive: true,
-    evolution: { xp: 0, stage: 1 },
+    evolution: { xp: 0, stage: 1, cityDamageDealt: 0 },
     combat: { damage: 5, range: 2, cooldown: 10, cooldownRemaining: 0 },
   };
 
@@ -77,6 +78,6 @@ export function createInitialState(seed: number): GameState {
     monster,
     heroes,
     buildings,
-    resources: { materials: 0, food: 0 },
+    resources: { materials: STARTING_MATERIALS, food: 0 },
   };
 }

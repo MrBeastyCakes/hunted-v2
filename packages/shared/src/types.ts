@@ -23,6 +23,7 @@ export interface Combat {
 export interface Evolution {
   xp: number;
   stage: number; // 1..3 in the slice
+  cityDamageDealt: number; // gates the jump to stage 3 (hybrid feeding)
 }
 
 export interface Entity {
@@ -56,6 +57,7 @@ export interface Building {
   pos: Vec2;
   health: Health;
   level: number;
+  combat?: Combat; // towers have one
 }
 
 export interface ResourcePool {
@@ -80,6 +82,7 @@ export interface Input {
   move: Vec2; // desired direction; not required to be normalized
   action?: ActionType;
   target?: EntityId | Vec2;
+  buildType?: BuildingType; // used when action === 'build'
 }
 
 // Inputs for one tick, keyed by actorId.
