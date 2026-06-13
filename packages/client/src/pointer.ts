@@ -103,7 +103,8 @@ export function applyIntent(control: PointerControl, intent: TapIntent): Pointer
     case 'feed':
       return { feedNodeId: intent.nodeId };
     case 'spectate':
-      return control; // spectate is handled by the camera, not by movement
+    case 'openBuildMenu':
+      return control; // handled elsewhere (camera / build menu), not by movement
   }
 }
 
