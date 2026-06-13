@@ -55,3 +55,8 @@ export const TOWER_COMBAT: Combat = {
   cooldown: 15,
   cooldownRemaining: 0,
 };
+
+// --- Bots ---
+export const MONSTER_ASSAULT_STAGE = 2; // monster feeds until this stage, then assaults the city
+export const HERO_AGGRO_RADIUS = 20; // heroes swarm the monster when it gets this close to the core
+export const HERO_HOLD_RADIUS = 5; // heroes regroup toward the core when farther than this
