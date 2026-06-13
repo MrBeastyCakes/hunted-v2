@@ -125,3 +125,17 @@ test('controlToInput with no control is a no-op', () => {
   const s = createInitialState(1);
   expect(controlToInput(s, s.heroes[0].id, {}, 0.6).move).toEqual({ x: 0, y: 0 });
 });
+
+test('a hero tapping the campfire (core) opens the build menu', () => {
+  const s = createInitialState(1);
+  const core = s.buildings.find((b) => b.type === 'core')!;
+  const intent = resolveTapIntent(s, s.heroes[0].id, { ...core.pos }, 3.5);
+  expect(intent).toEqual({ kind: 'openBuildMenu' });
+});
+
+test('the monster tapping the campfire attacks, not opens a menu', () => {
+  const s = createInitialState(1);
+  const core = s.buildings.find((b) => b.type === 'core')!;
+  const intent = resolveTapIntent(s, s.monster.id, { ...core.pos }, 3.5);
+  expect(intent).toEqual({ kind: 'attack', point: core.pos });
+});

@@ -43,7 +43,8 @@ export type TapIntent =
   | { kind: 'move'; point: Vec2 }
   | { kind: 'feed'; nodeId: EntityId }
   | { kind: 'attack'; point: Vec2 }
-  | { kind: 'spectate'; actorId: EntityId };
+  | { kind: 'spectate'; actorId: EntityId }
+  | { kind: 'openBuildMenu' };
 
 // Maps a tapped world point to an intent, given who the player controls.
 export function resolveTapIntent(
@@ -70,6 +71,10 @@ export function resolveTapIntent(
       return { kind: 'attack', point: pick.pos };
     }
     if (!isMonster && pick.kind === 'monster') return { kind: 'attack', point: pick.pos };
+    if (!isMonster && pick.kind === 'building') {
+      const building = state.buildings.find((b) => b.id === pick.id);
+      if (building?.type === 'core') return { kind: 'openBuildMenu' };
+    }
   }
   return { kind: 'move', point: world };
 }
