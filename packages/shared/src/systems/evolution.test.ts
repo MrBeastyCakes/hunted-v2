@@ -1,50 +1,43 @@
 import { evolutionSystem } from './evolution';
 import { createInitialState } from '../state';
-import {
-  STAGE2_XP,
-  STAGE3_XP,
-  STAGE3_CITY_DAMAGE_REQ,
-  STAGE_DAMAGE_BONUS,
-  STAGE_HP_BONUS,
-} from '../constants';
+import { MONSTER_STAGE_XP, STAGE_DAMAGE_BONUS, STAGE_HP_BONUS } from '../constants';
 
-test('reaches stage 2 at the XP threshold and gains HP + damage', () => {
-  const s = createInitialState(123);
+test('reaching a threshold advances the stage with HP + damage gains', () => {
+  const s = createInitialState(1);
   const m = s.monster;
   const baseMaxHp = m.health.maxHp;
   const baseDmg = m.combat!.damage;
-  m.evolution!.xp = STAGE2_XP;
+  m.evolution!.xp = MONSTER_STAGE_XP[1]; // enough for stage 2
   evolutionSystem(s);
   expect(m.evolution!.stage).toBe(2);
   expect(m.health.maxHp).toBe(baseMaxHp + STAGE_HP_BONUS);
   expect(m.combat!.damage).toBe(baseDmg + STAGE_DAMAGE_BONUS);
 });
 
-test('stage 3 is gated behind city damage even with enough XP', () => {
-  const s = createInitialState(123);
+test('enough xp jumps multiple stages at once (heals + buffs per stage)', () => {
+  const s = createInitialState(1);
   const m = s.monster;
-  m.evolution!.xp = STAGE3_XP;
-  m.evolution!.cityDamageDealt = 0;
-  evolutionSystem(s);
-  expect(m.evolution!.stage).toBe(2); // capped at 2 until the city has been hit enough
-});
-
-test('stage 3 unlocks once the city-damage requirement is met', () => {
-  const s = createInitialState(123);
-  const m = s.monster;
-  m.evolution!.xp = STAGE3_XP;
-  m.evolution!.cityDamageDealt = STAGE3_CITY_DAMAGE_REQ;
+  const baseMaxHp = m.health.maxHp;
+  m.evolution!.xp = MONSTER_STAGE_XP[2]; // stage 3
   evolutionSystem(s);
   expect(m.evolution!.stage).toBe(3);
+  expect(m.health.maxHp).toBe(baseMaxHp + 2 * STAGE_HP_BONUS);
+});
+
+test('caps at stage 5', () => {
+  const s = createInitialState(1);
+  s.monster.evolution!.xp = MONSTER_STAGE_XP[4] + 99999;
+  evolutionSystem(s);
+  expect(s.monster.evolution!.stage).toBe(5);
 });
 
 test('evolution only moves upward and is idempotent', () => {
-  const s = createInitialState(123);
+  const s = createInitialState(1);
   const m = s.monster;
-  m.evolution!.xp = STAGE2_XP;
+  m.evolution!.xp = MONSTER_STAGE_XP[1];
   evolutionSystem(s);
-  const maxHpAfterFirst = m.health.maxHp;
-  evolutionSystem(s); // no further XP gained
+  const hp = m.health.maxHp;
+  evolutionSystem(s);
   expect(m.evolution!.stage).toBe(2);
-  expect(m.health.maxHp).toBe(maxHpAfterFirst);
+  expect(m.health.maxHp).toBe(hp);
 });
