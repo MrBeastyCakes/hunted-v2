@@ -1,4 +1,12 @@
-import { distance, type Entity, type EntityId, type GameState, type Vec2 } from '@game/shared';
+import {
+  distance,
+  FEED_RANGE,
+  type Entity,
+  type EntityId,
+  type GameState,
+  type Input,
+  type Vec2,
+} from '@game/shared';
 
 export interface Pick {
   kind: 'monster' | 'hero' | 'building' | 'wildlife';
@@ -64,4 +72,57 @@ export function resolveTapIntent(
     if (!isMonster && pick.kind === 'monster') return { kind: 'attack', point: pick.pos };
   }
   return { kind: 'move', point: world };
+}
+
+export interface PointerControl {
+  moveTarget?: Vec2;
+  feedNodeId?: EntityId;
+}
+
+export function moveTargetToInput(
+  actorId: EntityId,
+  from: Vec2,
+  target: Vec2,
+  arrivalEps: number,
+): Input {
+  if (distance(from, target) <= arrivalEps) return { actorId, move: { x: 0, y: 0 } };
+  return { actorId, move: { x: target.x - from.x, y: target.y - from.y } };
+}
+
+// Folds a tap intent into the persistent pointer-control state.
+export function applyIntent(control: PointerControl, intent: TapIntent): PointerControl {
+  switch (intent.kind) {
+    case 'move':
+    case 'attack':
+      return { moveTarget: { ...intent.point } };
+    case 'feed':
+      return { feedNodeId: intent.nodeId };
+    case 'spectate':
+      return control; // spectate is handled by the camera, not by movement
+  }
+}
+
+// Produces the per-tick Input for the controlled actor from the pointer-control state.
+export function controlToInput(
+  state: GameState,
+  controlledId: EntityId,
+  control: PointerControl,
+  arrivalEps: number,
+): Input {
+  const actor = findActor(state, controlledId);
+  if (!actor) return { actorId: controlledId, move: { x: 0, y: 0 } };
+
+  if (control.feedNodeId !== undefined) {
+    const node = state.map.wildlifeNodes.find((n) => n.id === control.feedNodeId);
+    if (node) {
+      if (distance(actor.pos, node.pos) <= FEED_RANGE) {
+        return { actorId: controlledId, move: { x: 0, y: 0 }, action: 'feed' };
+      }
+      return moveTargetToInput(controlledId, actor.pos, node.pos, arrivalEps);
+    }
+  }
+  if (control.moveTarget) {
+    return moveTargetToInput(controlledId, actor.pos, control.moveTarget, arrivalEps);
+  }
+  return { actorId: controlledId, move: { x: 0, y: 0 } };
 }
