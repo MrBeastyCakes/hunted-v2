@@ -17,11 +17,13 @@ export class GameRenderer {
   private readonly g = new Graphics();
   private readonly hud: Text;
   private readonly banner: Text;
+  private cameraTargetId: number;
 
   constructor(
     private readonly app: Application,
     private readonly controlledId: number,
   ) {
+    this.cameraTargetId = controlledId;
     this.world.addChild(this.g);
     this.app.stage.addChild(this.world);
 
@@ -34,6 +36,10 @@ export class GameRenderer {
     this.app.stage.addChild(this.banner);
   }
 
+  setCameraTarget(id: number): void {
+    this.cameraTargetId = id;
+  }
+
   // prev/curr are consecutive sim states; alpha is 0..1 progress between them.
   render(prev: GameState, curr: GameState, alpha: number): void {
     const g = this.g;
@@ -43,7 +49,7 @@ export class GameRenderer {
     const screenH = this.app.renderer.height;
 
     // Camera: center the controlled actor (use its interpolated position).
-    const controlledPos = this.interpPos(prev, curr, this.controlledId, alpha) ?? curr.monster.pos;
+    const controlledPos = this.interpPos(prev, curr, this.cameraTargetId, alpha) ?? curr.monster.pos;
     const camIso = worldToScreen(controlledPos, TILE_W, TILE_H, { x: 0, y: 0 });
     const origin: ScreenPoint = { x: screenW / 2 - camIso.x, y: screenH / 2 - camIso.y };
 
@@ -87,10 +93,13 @@ export class GameRenderer {
 
     // HUD.
     const m = curr.monster;
+    const me = findEntity(curr, this.controlledId);
+    const spectating = me ? !me.alive : false;
     this.hud.text =
       `materials: ${Math.floor(curr.resources.materials)}\n` +
       `monster: stage ${m.evolution?.stage ?? 1}  hp ${Math.ceil(m.health.hp)}/${m.health.maxHp}  xp ${Math.floor(m.evolution?.xp ?? 0)}\n` +
-      `tick: ${curr.tick}`;
+      `tick: ${curr.tick}` +
+      (spectating ? `\nSPECTATING — Tab/Space to cycle` : '');
 
     // Banner on game end.
     this.banner.position.set(screenW / 2, screenH / 2);
