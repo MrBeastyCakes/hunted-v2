@@ -199,5 +199,6 @@ browser, no network**. Sim is built **test-first (TDD)**:
   (Default: keep both; revisit if it adds friction.)
 - Exact balance numbers (stage XP thresholds, building costs, HP/damage) — to be tuned
   during slice playtesting, captured in `shared/data`.
-- Hero respawn rules after a pick-off (permadeath for the match vs timed respawn) —
-  decide during slice playtesting.
+- Hero respawn: **DECIDED (2026-06-13) — no respawn.** A hero killed in a match is
+  permadead; that player enters **spectate mode** for the rest of the match. (The sim
+  already models permadeath via `alive: false`; spectate is a client-side behavior.)
