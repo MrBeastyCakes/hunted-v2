@@ -1,7 +1,6 @@
-import { BUILD_COSTS, BUILDER_DISCOUNT, BUILDING_HP, TOWER_COMBAT } from '../constants';
+import { BUILDING_HP, TOWER_COMBAT } from '../constants';
+import { buildCost, type BuildableType } from '../cost';
 import type { Building, BuildingType, GameState, InputMap, Vec2 } from '../types';
-
-type BuildableType = 'generator' | 'tower' | 'workshop';
 
 function isBuildable(type: BuildingType): type is BuildableType {
   return type === 'generator' || type === 'tower' || type === 'workshop';
@@ -30,8 +29,7 @@ export function buildingSystem(state: GameState, inputs: InputMap): void {
     if (!isBuildable(input.buildType)) continue;
 
     const type = input.buildType;
-    const base = BUILD_COSTS[type];
-    const cost = hero.role === 'builder' ? Math.floor(base * BUILDER_DISCOUNT) : base;
+    const cost = buildCost(hero.role, type);
     if (state.resources.materials < cost) continue;
 
     state.resources.materials -= cost;

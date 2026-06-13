@@ -12,3 +12,5 @@ export { combatSystem } from './systems/combat';
 export { evolutionSystem } from './systems/evolution';
 export { winConditionSystem } from './systems/winCondition';
 export { botThink, monsterBot, heroBot } from './bots/index';
+export { buildCost } from './cost';
+export type { BuildableType } from './cost';
