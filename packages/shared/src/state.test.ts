@@ -1,5 +1,11 @@
 import { createInitialState } from './state';
-import { CORE_START_HP, MONSTER_START_HP } from './constants';
+import {
+  CORE_START_HP,
+  MONSTER_START_HP,
+  MOB_PER_HERD,
+  VILLAGERS_AT_START,
+  WILDLIFE_HERD_COUNT,
+} from './constants';
 
 test('creates a playing match with one monster and four heroes', () => {
   const s = createInitialState(123);
@@ -26,6 +32,23 @@ test('seeds RNG state from the seed and is reproducible', () => {
   expect(a).toEqual(b);
 });
 
+test('spawns wildlife herds and one villager herd at the campfire', () => {
+  const s = createInitialState(123);
+  const wildlifeHerds = s.map.herds.filter((h) => h.species === 'wildlife');
+  const villagerHerds = s.map.herds.filter((h) => h.species === 'villager');
+  expect(wildlifeHerds).toHaveLength(WILDLIFE_HERD_COUNT);
+  expect(villagerHerds).toHaveLength(1);
+
+  const core = s.buildings.find((b) => b.type === 'core')!;
+  expect(villagerHerds[0].home).toEqual(core.pos);
+
+  const wildlife = s.map.mobs.filter((m) => m.species === 'wildlife');
+  const villagers = s.map.mobs.filter((m) => m.species === 'villager');
+  expect(wildlife).toHaveLength(WILDLIFE_HERD_COUNT * MOB_PER_HERD);
+  expect(villagers).toHaveLength(VILLAGERS_AT_START);
+  expect(s.map.mobs.every((m) => m.state === 'calm')).toBe(true);
+});
+
 test('all entity and building ids are unique', () => {
   const s = createInitialState(123);
   const ids = [
@@ -34,6 +57,7 @@ test('all entity and building ids are unique', () => {
     ...s.buildings.map((b) => b.id),
     ...s.map.wildlifeNodes.map((n) => n.id),
     ...s.map.resourceNodes.map((n) => n.id),
+    ...s.map.mobs.map((m) => m.id),
   ];
   expect(new Set(ids).size).toBe(ids.length);
 });
