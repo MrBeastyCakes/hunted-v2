@@ -16,3 +16,7 @@ export function normalize(v: Vec2): Vec2 {
   if (len === 0) return { x: 0, y: 0 };
   return { x: v.x / len, y: v.y / len };
 }
+
+export function distance(a: Vec2, b: Vec2): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
