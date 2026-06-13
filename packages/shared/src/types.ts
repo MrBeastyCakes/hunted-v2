@@ -44,11 +44,30 @@ export interface ResourceNode {
   amount: number;
 }
 
+export type MobSpecies = 'wildlife' | 'villager';
+
+export interface Mob {
+  id: EntityId;
+  herdId: number;
+  species: MobSpecies;
+  pos: Vec2;
+  state: 'calm' | 'fleeing';
+  fleeTicks: number;
+}
+
+export interface Herd {
+  id: number;
+  species: MobSpecies;
+  home: Vec2;
+}
+
 export interface MapState {
   width: number;
   height: number;
   wildlifeNodes: ResourceNode[];
   resourceNodes: ResourceNode[];
+  mobs: Mob[];
+  herds: Herd[];
 }
 
 export interface Building {
