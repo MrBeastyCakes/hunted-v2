@@ -1,6 +1,6 @@
 import { Application, BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { RESOURCE_NODE_AMOUNT } from '@game/shared';
-import { visionParams } from './vision';
+import { minClearRadiusPx, visionParams } from './vision';
 import type { Building, Entity, GameState, Mob, Vec2, WeaponType } from '@game/shared';
 import { COLORS, TILE_H, TILE_W } from '../config';
 import { worldToScreen, type ScreenPoint } from './iso';
@@ -194,10 +194,13 @@ export class GameRenderer {
     this.blurFilter.strength = vis.blur;
     this.world.filters = vis.blur > 0 ? [this.blurFilter] : [];
     if (vis.fogRadius !== null) {
+      // Never let the clear bubble drop below 4x the monster's attack range.
+      const attackRange = curr.monster.combat?.range ?? 2;
+      const clearRadius = Math.max(vis.fogRadius, minClearRadiusPx(attackRange, tw));
       this.fogSprite.visible = true;
       this.fogSprite.position.set(screenW / 2, screenH / 2);
       const clearPx = (this.fogSprite.texture.width / 2) * 0.06;
-      this.fogSprite.scale.set(vis.fogRadius / clearPx);
+      this.fogSprite.scale.set(clearRadius / clearPx);
     } else {
       this.fogSprite.visible = false;
     }

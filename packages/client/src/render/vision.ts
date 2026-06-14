@@ -1,3 +1,11 @@
+// The monster always sees at least this many attack-ranges around itself.
+export const ATTACK_SIGHT_MULT = 4;
+
+// Minimum always-clear bubble radius in screen px = 4 x attack range, in iso screen units.
+export function minClearRadiusPx(attackRange: number, tileW: number): number {
+  return attackRange * ATTACK_SIGHT_MULT * (tileW / 2);
+}
+
 export interface VisionParams {
   fogRadius: number | null; // clear-bubble radius in screen px; null = no fog (full clear)
   blur: number; // pixi blur strength (0 = none)

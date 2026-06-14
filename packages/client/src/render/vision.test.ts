@@ -1,4 +1,8 @@
-import { visionParams } from './vision';
+import { minClearRadiusPx, visionParams } from './vision';
+
+test('minClearRadiusPx is 4x attack range in iso screen units', () => {
+  expect(minClearRadiusPx(2, 32)).toBe(128); // 2 * 4 * (32/2)
+});
 
 test('rank 0 is blurry with a small clear bubble; higher ranks clear up', () => {
   const r0 = visionParams(0);
