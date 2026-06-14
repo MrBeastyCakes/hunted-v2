@@ -52,6 +52,14 @@ test('spawns wildlife herds and one villager herd at the campfire', () => {
   expect(s.map.mobs.every((m) => m.state === 'calm')).toBe(true);
 });
 
+test('wildlife herds spawn a mix of prey tiers; villagers are the villager tier', () => {
+  const s = createInitialState(123);
+  const wildTiers = new Set(s.map.mobs.filter((m) => m.species === 'wildlife').map((m) => m.tier));
+  expect(wildTiers.has('critter')).toBe(true);
+  expect(wildTiers.has('large')).toBe(true);
+  expect(s.map.mobs.filter((m) => m.species === 'villager').every((m) => m.tier === 'villager')).toBe(true);
+});
+
 test('the monster starts with one free level of XP to spend on spawn', () => {
   const s = createInitialState(1);
   expect(s.monster.evolution!.xp).toBe(MONSTER_START_XP);

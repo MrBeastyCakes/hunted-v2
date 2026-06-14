@@ -47,6 +47,7 @@ export interface ResourceNode {
 }
 
 export type MobSpecies = 'wildlife' | 'villager';
+export type PreyTier = 'critter' | 'medium' | 'large' | 'villager';
 
 export type WeaponType = 'sword' | 'bow';
 
@@ -60,6 +61,7 @@ export interface Mob {
   id: EntityId;
   herdId: number;
   species: MobSpecies;
+  tier: PreyTier;
   pos: Vec2;
   state: 'calm' | 'fleeing';
   fleeTicks: number;

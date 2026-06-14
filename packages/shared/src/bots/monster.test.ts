@@ -19,10 +19,11 @@ test('the monster moves toward the nearest mob to hunt it', () => {
       id: 9001,
       herdId: 1,
       species: 'wildlife',
+      tier: 'critter',
       pos: { x: s.monster.pos.x + 10, y: s.monster.pos.y },
       state: 'calm',
       fleeTicks: 0,
-      hp: 16,
+      hp: 6,
     },
   ];
   const input = monsterBot(s);

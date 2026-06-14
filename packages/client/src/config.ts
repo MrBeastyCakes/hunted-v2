@@ -12,6 +12,7 @@ export const COLORS = {
   leafLight: 0x4a7c3a,
   rock: 0x6b7280,
   critter: 0xb08d57,
+  largeBeast: 0xc0563a,
   monster: 0xff4d4d,
   hero: 0x4da3ff,
   heroControlled: 0x7ee787,
