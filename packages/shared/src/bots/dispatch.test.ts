@@ -3,8 +3,19 @@ import { createInitialState } from '../state';
 
 test('routes the monster id to the monster bot', () => {
   const s = createInitialState(123);
-  s.monster.pos = { ...s.map.wildlifeNodes[0].pos };
-  expect(botThink(s, s.monster.id).action).toBe('feed'); // monster-bot behavior
+  s.map.mobs = [
+    {
+      id: 9001,
+      herdId: 1,
+      species: 'wildlife',
+      pos: { x: s.monster.pos.x + 5, y: s.monster.pos.y },
+      state: 'calm',
+      fleeTicks: 0,
+    },
+  ];
+  const input = botThink(s, s.monster.id);
+  expect(input.actorId).toBe(s.monster.id);
+  expect(input.move.x).toBeGreaterThan(0); // monster-bot behavior: moves toward the mob
 });
 
 test('routes a hero id to the hero bot', () => {
