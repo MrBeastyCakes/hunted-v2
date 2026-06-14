@@ -48,10 +48,10 @@ test('monster wins: it sits on the core and razes it while heroes are away', () 
 test('hunting mobs levels the monster up', () => {
   let s = createInitialState(3);
   // Drive the monster onto each mob in turn and let step() eat it.
-  for (let i = 0; i < 12 && s.map.mobs.length > 0; i++) {
+  for (let i = 0; i < 120 && s.map.mobs.length > 0; i++) {
     const target = s.map.mobs[0];
     s = structuredClone(s);
-    s.monster.pos = { ...target.pos }; // teleport onto a mob (eaten next step)
+    s.monster.pos = { ...target.pos }; // sit on a mob and bite it down
     s = step(s, { [s.monster.id]: { actorId: s.monster.id, move: { x: 0, y: 0 } } });
   }
   expect(s.monster.evolution!.xp).toBeGreaterThan(0);
