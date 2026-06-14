@@ -1,4 +1,4 @@
-import { CITY_DAMAGE_XP, WORKSHOP_HERO_DAMAGE_BONUS } from '../constants';
+import { WORKSHOP_HERO_DAMAGE_BONUS } from '../constants';
 import { distance } from '../math';
 import type { Combat, GameState, Health, InputMap, Vec2 } from '../types';
 
@@ -50,16 +50,12 @@ export function combatSystem(state: GameState, inputs: InputMap): void {
     : 0;
 
   // 2. Monster attacks nearest enemy.
-  if (m.alive && m.combat && m.evolution) {
+  if (m.alive && m.combat) {
     if (m.combat.cooldownRemaining <= 0) {
       const target = nearestMonsterTarget(state);
       if (target) {
         target.health.hp -= m.combat.damage;
         m.combat.cooldownRemaining = m.combat.cooldown;
-        if (target.isBuilding) {
-          m.evolution.cityDamageDealt += m.combat.damage;
-          m.evolution.xp += m.combat.damage * CITY_DAMAGE_XP;
-        }
       }
     }
   }

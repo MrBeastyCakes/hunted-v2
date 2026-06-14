@@ -42,12 +42,10 @@ test('monster wins: it sits on the core and razes it while heroes are away', () 
     [state.monster.id]: { actorId: state.monster.id, move: { x: 0, y: 0 } }, // auto-attacks the core
   }));
   expect(finished.phase).toBe('monsterWon');
-  expect(finished.monster.evolution!.cityDamageDealt).toBeGreaterThan(0);
 });
 
-test('hunting mobs levels the monster up', () => {
+test('hunting mobs banks XP to spend on skills', () => {
   let s = createInitialState(3);
-  // Drive the monster onto each mob in turn and let step() eat it.
   for (let i = 0; i < 120 && s.map.mobs.length > 0; i++) {
     const target = s.map.mobs[0];
     s = structuredClone(s);
@@ -55,5 +53,4 @@ test('hunting mobs levels the monster up', () => {
     s = step(s, { [s.monster.id]: { actorId: s.monster.id, move: { x: 0, y: 0 } } });
   }
   expect(s.monster.evolution!.xp).toBeGreaterThan(0);
-  expect(s.monster.evolution!.stage).toBeGreaterThanOrEqual(2);
 });

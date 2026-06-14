@@ -157,7 +157,8 @@ export class GameRenderer {
     const spectating = me ? !me.alive : false;
     this.hud.text =
       `materials: ${Math.floor(curr.resources.materials)}\n` +
-      `monster: L${m.evolution?.stage ?? 1}/5  hp ${Math.ceil(m.health.hp)}/${m.health.maxHp}  xp ${Math.floor(m.evolution?.xp ?? 0)}\n` +
+      `monster: L${m.evolution?.level ?? 1}  hp ${Math.ceil(m.health.hp)}/${m.health.maxHp}  xp ${Math.floor(m.evolution?.xp ?? 0)}\n` +
+      `senses V${m.evolution?.skills.vision ?? 0} H${m.evolution?.skills.hearing ?? 0} S${m.evolution?.skills.smell ?? 0}\n` +
       `tick: ${curr.tick}` +
       (spectating ? `\nSPECTATING — Tab/Space to cycle` : '');
 
@@ -189,8 +190,8 @@ export class GameRenderer {
   }
 
   private drawMonster(p: ScreenPoint, m: Entity): void {
-    const stage = m.evolution?.stage ?? 1;
-    const r = 9 + stage * 2.5;
+    const level = m.evolution?.level ?? 1;
+    const r = 9 + Math.min(level, 6) * 2;
     this.shadow(p, r);
     const n = 8;
     const spikes: number[] = [];

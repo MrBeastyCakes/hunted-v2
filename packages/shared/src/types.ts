@@ -5,7 +5,8 @@ export type { Vec2 };
 export type EntityId = number;
 export type RoleType = 'builder' | 'defender' | 'scout' | 'economy';
 export type Phase = 'lobby' | 'playing' | 'monsterWon' | 'buildersWon';
-export type ActionType = 'attack' | 'build' | 'ability' | 'craft';
+export type ActionType = 'attack' | 'build' | 'ability' | 'craft' | 'spend';
+export type SkillPath = 'vision' | 'hearing' | 'smell';
 export type BuildingType = 'core' | 'generator' | 'tower' | 'workshop' | 'blacksmith';
 
 export interface Health {
@@ -21,9 +22,9 @@ export interface Combat {
 }
 
 export interface Evolution {
-  xp: number;
-  stage: number; // 1..3 in the slice
-  cityDamageDealt: number; // gates the jump to stage 3 (hybrid feeding)
+  xp: number; // spendable bank
+  level: number; // 1..; rises each rank bought
+  skills: { vision: number; hearing: number; smell: number };
 }
 
 export interface Entity {
@@ -113,6 +114,7 @@ export interface Input {
   target?: EntityId | Vec2;
   buildType?: BuildingType; // used when action === 'build'
   craftType?: WeaponType; // used when action === 'craft'
+  skillPath?: SkillPath; // used when action === 'spend'
 }
 
 // Inputs for one tick, keyed by actorId.

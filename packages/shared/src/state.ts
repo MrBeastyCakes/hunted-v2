@@ -41,7 +41,7 @@ export function createInitialState(seed: number): GameState {
     speed: MONSTER_SPEED,
     health: { hp: MONSTER_START_HP, maxHp: MONSTER_START_HP },
     alive: true,
-    evolution: { xp: 0, stage: 1, cityDamageDealt: 0 },
+    evolution: { xp: 0, level: 1, skills: { vision: 0, hearing: 0, smell: 0 } },
     combat: { damage: 5, range: 2, cooldown: 10, cooldownRemaining: 0 },
   };
 
