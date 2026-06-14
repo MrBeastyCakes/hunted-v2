@@ -11,6 +11,7 @@ export { combatSystem } from './systems/combat';
 export { winConditionSystem } from './systems/winCondition';
 export { skillSystem } from './systems/skill';
 export { spendOnSkill, levelCost } from './skill';
+export { dayNight, CYCLE_TICKS, TOTAL_TICKS, type DayNight } from './time';
 export { herdSystem } from './systems/herd';
 export { huntingSystem } from './systems/hunting';
 export { craftingSystem } from './systems/crafting';

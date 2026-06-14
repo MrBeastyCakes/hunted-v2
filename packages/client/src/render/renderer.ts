@@ -1,5 +1,5 @@
 import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
-import { RESOURCE_NODE_AMOUNT } from '@game/shared';
+import { RESOURCE_NODE_AMOUNT, NIGHTS_TO_SURVIVE, dayNight } from '@game/shared';
 import { minClearRadiusPx, visionParams } from './vision';
 import {
   hearTargets,
@@ -15,6 +15,8 @@ import { isoBoxFaces } from './shapes';
 import { generateForest, type ForestProp } from './forest';
 
 const GROUND_STEP = 10;
+const HERO_NIGHT_FOG = 150; // px clear-bubble radius around a villager at night
+const NIGHT_GROUND_FACTOR = 0.45; // darken ground tiles after dark
 
 const BUILDING_STYLE: Record<Building['type'], { hw: number; hh: number; h: number; color: number }> = {
   core: { hw: 16, hh: 8, h: 20, color: COLORS.core },
@@ -106,10 +108,18 @@ export class GameRenderer {
     const screenW = this.app.screen.width;
     const screenH = this.app.screen.height;
 
+    const dn = dayNight(curr.tick);
     const isMonsterView = this.controlledId === curr.monster.id && curr.monster.alive;
-    const vis = isMonsterView
-      ? visionParams(curr.monster.evolution?.skills.vision ?? 0)
-      : { fogRadius: null as number | null, zoom: 1 };
+    // Monster sight is governed by its senses (any time). Villagers see the whole map by day, but
+    // at night they're reduced to a small bubble around the camera. The monster is unaffected.
+    let vis: { fogRadius: number | null; zoom: number };
+    if (isMonsterView) {
+      vis = visionParams(curr.monster.evolution?.skills.vision ?? 0);
+    } else if (dn.isNight) {
+      vis = { fogRadius: HERO_NIGHT_FOG, zoom: 1 };
+    } else {
+      vis = { fogRadius: null, zoom: 1 };
+    }
     const tw = TILE_W * vis.zoom;
     const th = TILE_H * vis.zoom;
 
@@ -130,7 +140,8 @@ export class GameRenderer {
         const b = project({ x: (i + 1) * GROUND_STEP, y: j * GROUND_STEP });
         const c = project({ x: (i + 1) * GROUND_STEP, y: (j + 1) * GROUND_STEP });
         const d = project({ x: i * GROUND_STEP, y: (j + 1) * GROUND_STEP });
-        const color = (i + j) % 2 === 0 ? COLORS.ground : COLORS.ground2;
+        const base = (i + j) % 2 === 0 ? COLORS.ground : COLORS.ground2;
+        const color = dn.isNight ? shade(base, NIGHT_GROUND_FACTOR) : base;
         g.poly([a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y]).fill(color);
       }
     }
@@ -188,7 +199,11 @@ export class GameRenderer {
     const m = curr.monster;
     const me = findEntity(curr, this.controlledId);
     const spectating = me ? !me.alive : false;
+    const secs = Math.ceil(dn.ticksLeftInPhase / 20);
+    const mmss = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+    const phaseLine = dn.isNight ? `Night ${dn.cycle}/${NIGHTS_TO_SURVIVE}` : `Day ${dn.cycle}`;
     this.hud.text =
+      `${phaseLine} · ${mmss} left\n` +
       `materials: ${Math.floor(curr.resources.materials)}\n` +
       `monster: L${m.evolution?.level ?? 1}  hp ${Math.ceil(m.health.hp)}/${m.health.maxHp}  xp ${Math.floor(m.evolution?.xp ?? 0)}\n` +
       `senses V${m.evolution?.skills.vision ?? 0} H${m.evolution?.skills.hearing ?? 0} S${m.evolution?.skills.smell ?? 0}\n` +
@@ -202,9 +217,11 @@ export class GameRenderer {
 
     // Vision: dim everything outside a clear bubble (sharp inside and out — no blur).
     if (vis.fogRadius !== null) {
-      // Never let the clear bubble drop below 4x the monster's attack range.
+      // For the monster, never let the clear bubble drop below 4x its attack range.
       const attackRange = curr.monster.combat?.range ?? 2;
-      const clearRadius = Math.max(vis.fogRadius, minClearRadiusPx(attackRange, tw));
+      const clearRadius = isMonsterView
+        ? Math.max(vis.fogRadius, minClearRadiusPx(attackRange, tw))
+        : vis.fogRadius;
       this.fogSprite.visible = true;
       this.fogSprite.position.set(screenW / 2, screenH / 2);
       const clearPx = (this.fogSprite.texture.width / 2) * 0.06;

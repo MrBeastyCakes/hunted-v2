@@ -1,13 +1,17 @@
 import { botThink } from './index';
 import { step } from '../step';
 import { createInitialState } from '../state';
+import { TOTAL_TICKS } from '../time';
 import type { InputMap } from '../types';
+
+// Even a perfect stalemate must end by the survival timer; allow a small buffer past it.
+const GUARD = TOTAL_TICKS + 200;
 
 // Everyone is a bot: the monster vs four hero bots. The match must conclude.
 test('a fully autonomous bot match reaches a conclusion', () => {
   let s = createInitialState(42);
   let guard = 0;
-  while (s.phase === 'playing' && guard < 30000) {
+  while (s.phase === 'playing' && guard < GUARD) {
     const inputs: InputMap = {};
     inputs[s.monster.id] = botThink(s, s.monster.id);
     for (const h of s.heroes) {
@@ -24,7 +28,7 @@ test('the autonomous match is deterministic for a given seed', () => {
   function play(seed: number) {
     let s = createInitialState(seed);
     let guard = 0;
-    while (s.phase === 'playing' && guard < 30000) {
+    while (s.phase === 'playing' && guard < GUARD) {
       const inputs: InputMap = {};
       inputs[s.monster.id] = botThink(s, s.monster.id);
       for (const h of s.heroes) if (h.alive) inputs[h.id] = botThink(s, h.id);

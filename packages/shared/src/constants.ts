@@ -16,6 +16,11 @@ export const CORE_START_HP = 200;
 
 import type { Combat } from './types';
 
+// --- Day/night survival ---
+export const DAY_TICKS = 8000; // ~6.67 min @ 20Hz
+export const NIGHT_TICKS = 4000; // ~3.33 min
+export const NIGHTS_TO_SURVIVE = 3;
+
 // --- Monster skill tree ---
 export const XP_PER_LEVEL_COST = 25; // cost to reach level n is XP_PER_LEVEL_COST * n
 export const MONSTER_START_XP = 50; // one free first-level pick on spawn (= levelCost at level 1)
