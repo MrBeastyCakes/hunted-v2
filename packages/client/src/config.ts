@@ -4,9 +4,14 @@ export const TILE_H = 16;
 
 export const COLORS = {
   background: 0x11151c,
-  ground: 0x1b2430,
-  ground2: 0x202b22,
+  ground: 0x2c3a24,
+  ground2: 0x253017,
   grid: 0x263041,
+  trunk: 0x5b3f27,
+  leafDark: 0x2f5a2c,
+  leafLight: 0x4a7c3a,
+  rock: 0x6b7280,
+  critter: 0xb08d57,
   monster: 0xff4d4d,
   hero: 0x4da3ff,
   heroControlled: 0x7ee787,
