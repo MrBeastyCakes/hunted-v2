@@ -62,13 +62,6 @@ export function createInitialState(seed: number): GameState {
     },
   ];
 
-  const wildlifeNodes: ResourceNode[] = [
-    { id: id(), pos: { x: 15, y: 15 }, amount: 100 },
-    { id: id(), pos: { x: 85, y: 20 }, amount: 100 },
-    { id: id(), pos: { x: 20, y: 80 }, amount: 100 },
-    { id: id(), pos: { x: 80, y: 85 }, amount: 100 },
-  ];
-
   const resourceNodes: ResourceNode[] = [
     { id: id(), pos: { x: 40, y: 30 }, amount: 100 },
     { id: id(), pos: { x: 60, y: 30 }, amount: 100 },
@@ -108,7 +101,7 @@ export function createInitialState(seed: number): GameState {
     phase: 'playing',
     rngSeed: seed,
     rngState: seed,
-    map: { width: MAP_WIDTH, height: MAP_HEIGHT, wildlifeNodes, resourceNodes, mobs, herds },
+    map: { width: MAP_WIDTH, height: MAP_HEIGHT, resourceNodes, mobs, herds },
     monster,
     heroes,
     buildings,

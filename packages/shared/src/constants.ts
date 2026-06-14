@@ -16,11 +16,6 @@ export const CORE_START_HP = 200;
 
 import type { Combat } from './types';
 
-// --- Feeding ---
-export const FEED_RANGE = 4; // world units
-export const FEED_RATE = 5; // node amount drained per tick
-export const XP_PER_AMOUNT = 1; // monster XP per amount drained
-
 // --- Evolution (5 levels; xp required to be AT each stage, index 0 = stage 1) ---
 export const MONSTER_STAGE_XP = [0, 100, 300, 800, 1800];
 export const STAGE_HP_BONUS = 40; // +maxHp (and heal) per stage gained

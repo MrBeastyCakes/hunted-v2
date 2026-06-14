@@ -5,7 +5,6 @@ export * from './rng';
 export * from './state';
 export * from './step';
 export { movementSystem } from './systems/movement';
-export { feedingSystem } from './systems/feeding';
 export { economySystem } from './systems/economy';
 export { buildingSystem } from './systems/building';
 export { combatSystem } from './systems/combat';

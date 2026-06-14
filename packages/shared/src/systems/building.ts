@@ -14,7 +14,6 @@ function maxId(state: GameState): number {
   let max = state.monster.id;
   for (const h of state.heroes) max = Math.max(max, h.id);
   for (const b of state.buildings) max = Math.max(max, b.id);
-  for (const n of state.map.wildlifeNodes) max = Math.max(max, n.id);
   for (const n of state.map.resourceNodes) max = Math.max(max, n.id);
   return max;
 }
