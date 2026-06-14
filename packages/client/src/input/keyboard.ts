@@ -1,7 +1,7 @@
 import type { KeyMap } from '../control';
 
 export function emptyKeyMap(): KeyMap {
-  return { up: false, down: false, left: false, right: false, feed: false, build: false };
+  return { up: false, down: false, left: false, right: false, build: false };
 }
 
 const CODE_TO_FIELD: Record<string, keyof KeyMap | undefined> = {
@@ -13,7 +13,6 @@ const CODE_TO_FIELD: Record<string, keyof KeyMap | undefined> = {
   ArrowLeft: 'left',
   KeyD: 'right',
   ArrowRight: 'right',
-  Space: 'feed',
   KeyB: 'build',
 };
 

@@ -5,7 +5,7 @@ export type { Vec2 };
 export type EntityId = number;
 export type RoleType = 'builder' | 'defender' | 'scout' | 'economy';
 export type Phase = 'lobby' | 'playing' | 'monsterWon' | 'buildersWon';
-export type ActionType = 'attack' | 'feed' | 'build' | 'ability';
+export type ActionType = 'attack' | 'build' | 'ability';
 export type BuildingType = 'core' | 'generator' | 'tower' | 'workshop';
 
 export interface Health {
@@ -64,7 +64,6 @@ export interface Herd {
 export interface MapState {
   width: number;
   height: number;
-  wildlifeNodes: ResourceNode[];
   resourceNodes: ResourceNode[];
   mobs: Mob[];
   herds: Herd[];

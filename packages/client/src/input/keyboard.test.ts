@@ -2,7 +2,7 @@ import { applyKey, emptyKeyMap } from './keyboard';
 
 test('emptyKeyMap is all false', () => {
   expect(emptyKeyMap()).toEqual({
-    up: false, down: false, left: false, right: false, feed: false, build: false,
+    up: false, down: false, left: false, right: false, build: false,
   });
 });
 
@@ -18,14 +18,12 @@ test('WASD and arrows set direction flags', () => {
   expect(m.right).toBe(true);
 });
 
-test('Space feeds and KeyB builds; release clears', () => {
+test('KeyB builds; release clears', () => {
   let m = emptyKeyMap();
-  m = applyKey(m, 'Space', true);
   m = applyKey(m, 'KeyB', true);
-  expect(m.feed).toBe(true);
   expect(m.build).toBe(true);
-  m = applyKey(m, 'Space', false);
-  expect(m.feed).toBe(false);
+  m = applyKey(m, 'KeyB', false);
+  expect(m.build).toBe(false);
 });
 
 test('unknown keys are ignored and return an unchanged map', () => {

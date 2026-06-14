@@ -38,16 +38,6 @@ test('monster attacks the city core and gains city-damage XP', () => {
   expect(s.monster.evolution!.xp).toBe(dmg * CITY_DAMAGE_XP);
 });
 
-test('monster does not attack while feeding', () => {
-  const s = createInitialState(123);
-  const core = s.buildings.find((b) => b.type === 'core')!;
-  s.monster.pos = { ...core.pos };
-  for (const h of s.heroes) h.pos = { x: 0, y: 0 };
-  const startCoreHp = core.health.hp;
-  combatSystem(s, { [s.monster.id]: { actorId: s.monster.id, move: { x: 0, y: 0 }, action: 'feed' } });
-  expect(core.health.hp).toBe(startCoreHp);
-});
-
 test('a tower auto-attacks the monster in range', () => {
   const s = createInitialState(123);
   const tower: Building = {

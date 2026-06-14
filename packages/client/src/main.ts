@@ -176,7 +176,7 @@ async function startGame(side: Side): Promise<void> {
           pendingBuild = undefined;
         } else {
           const k = keyboard.state();
-          const keyboardActive = k.up || k.down || k.left || k.right || k.feed || k.build;
+          const keyboardActive = k.up || k.down || k.left || k.right || k.build;
           inputs[controlledId] = keyboardActive
             ? inputFromKeys(controlledId, k, DEFAULT_BUILD)
             : controlToInput(curr, controlledId, control, MOVE_ARRIVAL_EPS);

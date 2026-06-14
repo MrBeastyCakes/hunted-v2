@@ -49,9 +49,8 @@ export function combatSystem(state: GameState, inputs: InputMap): void {
     ? WORKSHOP_HERO_DAMAGE_BONUS
     : 0;
 
-  // 2. Monster attacks nearest enemy (unless feeding this tick).
-  const mInput = inputs[m.id];
-  if (m.alive && m.combat && m.evolution && mInput?.action !== 'feed') {
+  // 2. Monster attacks nearest enemy.
+  if (m.alive && m.combat && m.evolution) {
     if (m.combat.cooldownRemaining <= 0) {
       const target = nearestMonsterTarget(state);
       if (target) {

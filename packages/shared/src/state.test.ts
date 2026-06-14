@@ -55,7 +55,6 @@ test('all entity and building ids are unique', () => {
     s.monster.id,
     ...s.heroes.map((h) => h.id),
     ...s.buildings.map((b) => b.id),
-    ...s.map.wildlifeNodes.map((n) => n.id),
     ...s.map.resourceNodes.map((n) => n.id),
     ...s.map.mobs.map((m) => m.id),
   ];
