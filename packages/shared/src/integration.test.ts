@@ -15,7 +15,12 @@ test('builders win: heroes stand on the monster and grind it down', () => {
   let s = createInitialState(1);
   // Put all four heroes on top of the monster so every hero attacks it.
   s = structuredClone(s);
-  for (const h of s.heroes) h.pos = { ...s.monster.pos };
+  for (const h of s.heroes) {
+    h.pos = { ...s.monster.pos };
+    h.equipped = 'sword';
+    h.combat!.damage = 8;
+    h.combat!.range = 1.8;
+  }
   const finished = run(s, 2000, (state) => {
     const inputs: InputMap = {};
     for (const h of state.heroes) {
