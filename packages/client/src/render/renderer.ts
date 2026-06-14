@@ -1,4 +1,4 @@
-import { Application, BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { RESOURCE_NODE_AMOUNT } from '@game/shared';
 import { minClearRadiusPx, visionParams } from './vision';
 import type { Building, Entity, GameState, Mob, Vec2, WeaponType } from '@game/shared';
@@ -43,7 +43,6 @@ export class GameRenderer {
   private lastTileH = TILE_H;
   private ghost?: { pos: Vec2; type: Building['type'] };
   private readonly forest: ForestProp[];
-  private readonly blurFilter = new BlurFilter({ strength: 0 });
   private readonly fogSprite: Sprite;
 
   constructor(
@@ -99,7 +98,7 @@ export class GameRenderer {
     const isMonsterView = this.controlledId === curr.monster.id && curr.monster.alive;
     const vis = isMonsterView
       ? visionParams(curr.monster.evolution?.skills.vision ?? 0)
-      : { fogRadius: null as number | null, blur: 0, zoom: 1 };
+      : { fogRadius: null as number | null, zoom: 1 };
     const tw = TILE_W * vis.zoom;
     const th = TILE_H * vis.zoom;
 
@@ -190,9 +189,7 @@ export class GameRenderer {
     else if (curr.phase === 'buildersWon') this.banner.text = 'BUILDERS WIN';
     else this.banner.text = '';
 
-    // Vision: blur the world at low ranks; dim everything but a clear bubble.
-    this.blurFilter.strength = vis.blur;
-    this.world.filters = vis.blur > 0 ? [this.blurFilter] : [];
+    // Vision: dim everything outside a clear bubble (sharp inside and out — no blur).
     if (vis.fogRadius !== null) {
       // Never let the clear bubble drop below 4x the monster's attack range.
       const attackRange = curr.monster.combat?.range ?? 2;
