@@ -1,9 +1,11 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
+import { RESOURCE_NODE_AMOUNT } from '@game/shared';
 import type { Building, Entity, GameState, Mob, Vec2, WeaponType } from '@game/shared';
 import { COLORS, TILE_H, TILE_W } from '../config';
 import { worldToScreen, type ScreenPoint } from './iso';
 import { lerpVec } from './interpolate';
 import { isoBoxFaces } from './shapes';
+import { generateForest, type ForestProp } from './forest';
 
 const GROUND_STEP = 10;
 
@@ -37,12 +39,14 @@ export class GameRenderer {
   private cameraTargetId: number;
   private lastOrigin: ScreenPoint = { x: 0, y: 0 };
   private ghost?: { pos: Vec2; type: Building['type'] };
+  private readonly forest: ForestProp[];
 
   constructor(
     private readonly app: Application,
     private readonly controlledId: number,
   ) {
     this.cameraTargetId = controlledId;
+    this.forest = generateForest(1337, 100, 100, 70, { x: 50, y: 50, r: 18 });
     this.world.addChild(this.g);
     this.app.stage.addChild(this.world);
 
@@ -100,6 +104,9 @@ export class GameRenderer {
 
     // Collect depth-sorted drawables.
     const drawables: Drawable[] = [];
+    for (const prop of this.forest) {
+      drawables.push({ x: prop.x, y: prop.y, render: (p) => this.drawProp(p, prop.kind) });
+    }
     for (const n of curr.map.resourceNodes) {
       drawables.push({ x: n.pos.x, y: n.pos.y, render: (p) => this.drawResource(p, n.amount) });
     }
@@ -226,9 +233,10 @@ export class GameRenderer {
       this.g.rect(p.x - 2, p.y - 7, 4, 6).fill(c);
       this.g.circle(p.x, p.y - 8, 2).fill(c);
     } else {
-      const c = mob.state === 'fleeing' ? COLORS.mobFlee : COLORS.wildlife;
-      this.g.ellipse(p.x, p.y - 3, 4, 2.5).fill(c);
-      this.g.circle(p.x + 3, p.y - 4, 1.6).fill(c);
+      const c = mob.state === 'fleeing' ? COLORS.mobFlee : COLORS.critter;
+      this.g.ellipse(p.x, p.y - 3, 4, 2.3).fill(c); // body
+      this.g.circle(p.x + 3.5, p.y - 5, 1.6).fill(c); // head
+      this.g.poly([p.x + 3.5, p.y - 6.5, p.x + 2.8, p.y - 8.5, p.x + 4.2, p.y - 8.5]).fill(c); // ear
     }
   }
 
@@ -239,8 +247,38 @@ export class GameRenderer {
 
   private drawResource(p: ScreenPoint, amount: number): void {
     if (amount <= 0) return;
-    this.shadow(p, 4);
-    this.g.poly([p.x, p.y - 8, p.x + 5, p.y - 2, p.x, p.y, p.x - 5, p.y - 2]).fill(COLORS.resource);
+    const scale = 0.6 + 0.6 * Math.min(1, amount / RESOURCE_NODE_AMOUNT);
+    this.drawTree(p, scale, true);
+  }
+
+  private drawProp(p: ScreenPoint, kind: ForestProp['kind']): void {
+    if (kind === 'tree') this.drawTree(p, 1, false);
+    else if (kind === 'bush') this.drawBush(p);
+    else this.drawRock(p);
+  }
+
+  private drawTree(p: ScreenPoint, scale: number, harvestable: boolean): void {
+    this.shadow(p, 6 * scale);
+    const th = 10 * scale;
+    this.g.rect(p.x - 1.5 * scale, p.y - th, 3 * scale, th).fill(COLORS.trunk);
+    const top = p.y - th;
+    const r = 8 * scale;
+    this.g.circle(p.x, top - r * 0.4, r).fill(harvestable ? COLORS.leafLight : COLORS.leafDark);
+    this.g.circle(p.x - r * 0.6, top + r * 0.2, r * 0.7).fill(COLORS.leafDark);
+    this.g.circle(p.x + r * 0.6, top + r * 0.2, r * 0.7).fill(COLORS.leafLight);
+  }
+
+  private drawBush(p: ScreenPoint): void {
+    this.shadow(p, 5);
+    this.g.circle(p.x, p.y - 3, 4).fill(COLORS.leafDark);
+    this.g.circle(p.x - 3, p.y - 2, 3).fill(COLORS.leafLight);
+    this.g.circle(p.x + 3, p.y - 2, 3).fill(COLORS.leafDark);
+  }
+
+  private drawRock(p: ScreenPoint): void {
+    this.shadow(p, 5);
+    this.g.ellipse(p.x, p.y - 2, 5, 3).fill(COLORS.rock);
+    this.g.ellipse(p.x - 1, p.y - 3, 2.5, 1.6).fill(0x8b929c);
   }
 
   private facing(prev: GameState, curr: GameState, id: number): Vec2 {
