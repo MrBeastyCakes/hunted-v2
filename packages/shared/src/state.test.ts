@@ -3,6 +3,8 @@ import {
   CORE_START_HP,
   MONSTER_START_HP,
   MOB_PER_HERD,
+  UNARMED_DAMAGE,
+  UNARMED_RANGE,
   VILLAGERS_AT_START,
   WILDLIFE_HERD_COUNT,
 } from './constants';
@@ -47,6 +49,16 @@ test('spawns wildlife herds and one villager herd at the campfire', () => {
   expect(wildlife).toHaveLength(WILDLIFE_HERD_COUNT * MOB_PER_HERD);
   expect(villagers).toHaveLength(VILLAGERS_AT_START);
   expect(s.map.mobs.every((m) => m.state === 'calm')).toBe(true);
+});
+
+test('heroes start unarmed with weak melee combat', () => {
+  const s = createInitialState(1);
+  expect(s.map.weapons).toEqual([]);
+  for (const h of s.heroes) {
+    expect(h.equipped).toBeUndefined();
+    expect(h.combat!.damage).toBe(UNARMED_DAMAGE);
+    expect(h.combat!.range).toBe(UNARMED_RANGE);
+  }
 });
 
 test('all entity and building ids are unique', () => {

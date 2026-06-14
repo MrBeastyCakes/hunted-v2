@@ -44,15 +44,17 @@ export const GENERATOR_RATE = 1; // materials/tick per generator
 export const ECONOMY_ROLE_BONUS = 2; // extra materials/tick if an economy hero is alive
 
 // --- Building ---
-export const BUILD_COSTS: Record<'generator' | 'tower' | 'workshop', number> = {
+export const BUILD_COSTS: Record<'generator' | 'tower' | 'workshop' | 'blacksmith', number> = {
   generator: 40,
   tower: 50,
   workshop: 60,
+  blacksmith: 60,
 };
-export const BUILDING_HP: Record<'generator' | 'tower' | 'workshop', number> = {
+export const BUILDING_HP: Record<'generator' | 'tower' | 'workshop' | 'blacksmith', number> = {
   generator: 30,
   tower: 40,
   workshop: 30,
+  blacksmith: 35,
 };
 export const BUILDER_DISCOUNT = 0.5; // builder role pays this fraction of the cost
 export const WORKSHOP_HERO_DAMAGE_BONUS = 3; // added to every hero's attack while a workshop stands
@@ -62,6 +64,15 @@ export const TOWER_COMBAT: Combat = {
   cooldown: 15,
   cooldownRemaining: 0,
 };
+
+// --- Weapons / equipment ---
+export const UNARMED_RANGE = 1.4;
+export const UNARMED_DAMAGE = 2;
+export const WEAPON_RANGE: Record<'sword' | 'bow', number> = { sword: 1.8, bow: 9 };
+export const WEAPON_DAMAGE: Record<'sword' | 'bow', number> = { sword: 8, bow: 4 };
+export const CRAFT_COST: Record<'sword' | 'bow', number> = { sword: 30, bow: 45 };
+export const PICKUP_RANGE = 1.2;
+export const RACK_OFFSET = { x: 3, y: -2 };
 
 // --- Bots ---
 export const MONSTER_ASSAULT_STAGE = 2; // monster feeds until this stage, then assaults the city

@@ -5,8 +5,8 @@ export type { Vec2 };
 export type EntityId = number;
 export type RoleType = 'builder' | 'defender' | 'scout' | 'economy';
 export type Phase = 'lobby' | 'playing' | 'monsterWon' | 'buildersWon';
-export type ActionType = 'attack' | 'build' | 'ability';
-export type BuildingType = 'core' | 'generator' | 'tower' | 'workshop';
+export type ActionType = 'attack' | 'build' | 'ability' | 'craft';
+export type BuildingType = 'core' | 'generator' | 'tower' | 'workshop' | 'blacksmith';
 
 export interface Health {
   hp: number;
@@ -36,6 +36,7 @@ export interface Entity {
   combat?: Combat;
   evolution?: Evolution; // monster only
   role?: RoleType; // hero only
+  equipped?: WeaponType; // heroes; undefined = unarmed
 }
 
 export interface ResourceNode {
@@ -45,6 +46,14 @@ export interface ResourceNode {
 }
 
 export type MobSpecies = 'wildlife' | 'villager';
+
+export type WeaponType = 'sword' | 'bow';
+
+export interface WeaponItem {
+  id: EntityId;
+  type: WeaponType;
+  pos: Vec2;
+}
 
 export interface Mob {
   id: EntityId;
@@ -67,6 +76,7 @@ export interface MapState {
   resourceNodes: ResourceNode[];
   mobs: Mob[];
   herds: Herd[];
+  weapons: WeaponItem[];
 }
 
 export interface Building {
@@ -101,6 +111,7 @@ export interface Input {
   action?: ActionType;
   target?: EntityId | Vec2;
   buildType?: BuildingType; // used when action === 'build'
+  craftType?: WeaponType; // used when action === 'craft'
 }
 
 // Inputs for one tick, keyed by actorId.

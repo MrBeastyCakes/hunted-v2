@@ -1,5 +1,7 @@
 import { combatSystem } from './systems/combat';
+import { craftingSystem } from './systems/crafting';
 import { economySystem } from './systems/economy';
+import { equipSystem } from './systems/equip';
 import { evolutionSystem } from './systems/evolution';
 import { buildingSystem } from './systems/building';
 import { herdSystem } from './systems/herd';
@@ -19,6 +21,8 @@ export function step(state: GameState, inputs: InputMap): GameState {
   huntingSystem(next);
   economySystem(next);
   buildingSystem(next, inputs);
+  craftingSystem(next, inputs);
+  equipSystem(next);
   combatSystem(next, inputs);
   evolutionSystem(next);
   winConditionSystem(next);

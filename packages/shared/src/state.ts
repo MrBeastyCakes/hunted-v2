@@ -8,6 +8,8 @@ import {
   MONSTER_SPEED,
   MONSTER_START_HP,
   STARTING_MATERIALS,
+  UNARMED_DAMAGE,
+  UNARMED_RANGE,
   VILLAGERS_AT_START,
   WILDLIFE_HERD_COUNT,
 } from './constants';
@@ -49,7 +51,7 @@ export function createInitialState(seed: number): GameState {
     health: { hp: HERO_START_HP, maxHp: HERO_START_HP },
     alive: true,
     role,
-    combat: { damage: 4, range: 3, cooldown: 12, cooldownRemaining: 0 },
+    combat: { damage: UNARMED_DAMAGE, range: UNARMED_RANGE, cooldown: 12, cooldownRemaining: 0 },
   }));
 
   const buildings: Building[] = [
@@ -101,7 +103,7 @@ export function createInitialState(seed: number): GameState {
     phase: 'playing',
     rngSeed: seed,
     rngState: seed,
-    map: { width: MAP_WIDTH, height: MAP_HEIGHT, resourceNodes, mobs, herds },
+    map: { width: MAP_WIDTH, height: MAP_HEIGHT, resourceNodes, mobs, herds, weapons: [] },
     monster,
     heroes,
     buildings,

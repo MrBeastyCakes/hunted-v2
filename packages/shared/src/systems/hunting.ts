@@ -7,16 +7,8 @@ import {
   WILDLIFE_XP,
 } from '../constants';
 import { distance } from '../math';
+import { maxId } from '../ids';
 import type { GameState, Mob } from '../types';
-
-function maxId(state: GameState): number {
-  let max = state.monster.id;
-  for (const h of state.heroes) max = Math.max(max, h.id);
-  for (const b of state.buildings) max = Math.max(max, b.id);
-  for (const n of state.map.resourceNodes) max = Math.max(max, n.id);
-  for (const mob of state.map.mobs) max = Math.max(max, mob.id);
-  return max;
-}
 
 // Monster eats mobs on contact (XP by species), and herds slowly repopulate.
 export function huntingSystem(state: GameState): void {
