@@ -61,6 +61,20 @@ test('an armed builder builds a tower when safe and able to afford it', () => {
   expect(BUILD_COSTS.tower).toBeGreaterThan(0);
 });
 
+test('an armed builder at the tower cap gathers instead of building', () => {
+  const s = createInitialState(123);
+  const builder = hero(s, 'builder');
+  builder.equipped = 'sword';
+  builder.pos = { x: 50, y: 50 };
+  s.resources.materials = 100000;
+  for (let i = 0; i < 6; i++) {
+    s.buildings.push({ id: 5000 + i, type: 'tower', pos: { x: i, y: 0 }, health: { hp: 40, maxHp: 40 }, level: 1 });
+  }
+  const input = heroBot(s, builder);
+  expect(input.action).toBeUndefined(); // not building; heads to a resource node
+  expect(Math.hypot(input.move.x, input.move.y)).toBeGreaterThan(0);
+});
+
 test('an armed economy hero builds a generator when safe and able to afford it', () => {
   const s = createInitialState(123);
   const economy = hero(s, 'economy');

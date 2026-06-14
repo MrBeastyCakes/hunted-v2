@@ -1,4 +1,4 @@
-import { BUILD_COSTS, CRAFT_COST, HERO_AGGRO_RADIUS, HERO_HOLD_RADIUS } from '../constants';
+import { BUILD_COSTS, BUILDING_CAP, CRAFT_COST, HERO_AGGRO_RADIUS, HERO_HOLD_RADIUS } from '../constants';
 import { buildCost } from '../cost';
 import { distance } from '../math';
 import type {
@@ -81,8 +81,11 @@ export function heroBot(state: GameState, hero: Entity): Input {
   // 3. Armed (or can't arm yet): build economy/defense, else regroup near the core.
   const choice = buildChoice(hero.role);
   if (choice && state.resources.materials >= BUILD_COSTS[choice]) {
-    const buildType: BuildingType = choice;
-    return { actorId: id, move: { x: 0, y: 0 }, action: 'build', buildType };
+    const built = state.buildings.filter((b) => b.type === choice).length;
+    if (built < BUILDING_CAP[choice]) {
+      const buildType: BuildingType = choice;
+      return { actorId: id, move: { x: 0, y: 0 }, action: 'build', buildType };
+    }
   }
   // Venture out to gather resources to fund the town.
   const node = nearestResource(state, hero.pos);

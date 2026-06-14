@@ -56,6 +56,21 @@ test('new building ids are unique', () => {
   expect(new Set(ids).size).toBe(ids.length);
 });
 
+test('cannot build past the per-type cap', () => {
+  const s = createInitialState(123);
+  const hero = s.heroes.find((h) => h.role === 'defender')!;
+  s.resources.materials = 100000;
+  // fill the tower cap (6)
+  for (let i = 0; i < 6; i++) {
+    s.buildings.push({ id: 5000 + i, type: 'tower', pos: { x: i, y: 0 }, health: { hp: 40, maxHp: 40 }, level: 1 });
+  }
+  const before = s.buildings.filter((b) => b.type === 'tower').length;
+  buildingSystem(s, {
+    [hero.id]: { actorId: hero.id, move: { x: 0, y: 0 }, action: 'build', buildType: 'tower' },
+  });
+  expect(s.buildings.filter((b) => b.type === 'tower').length).toBe(before); // no new tower
+});
+
 test('cannot build a core', () => {
   const s = createInitialState(123);
   const hero = s.heroes[0];

@@ -57,6 +57,13 @@ export const BUILDING_HP: Record<'generator' | 'tower' | 'workshop' | 'blacksmit
   workshop: 30,
   blacksmith: 35,
 };
+export const BUILDING_CAP: Record<'generator' | 'tower' | 'workshop' | 'blacksmith', number> = {
+  generator: 3,
+  tower: 6,
+  workshop: 1,
+  blacksmith: 1,
+};
+export const MATERIALS_CAP = 400; // shared materials pool is clamped here
 export const BUILDER_DISCOUNT = 0.5; // builder role pays this fraction of the cost
 export const WORKSHOP_HERO_DAMAGE_BONUS = 3; // added to every hero's attack while a workshop stands
 export const TOWER_COMBAT: Combat = {
