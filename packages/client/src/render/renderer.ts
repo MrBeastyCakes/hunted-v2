@@ -1,6 +1,12 @@
 import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { RESOURCE_NODE_AMOUNT } from '@game/shared';
 import { minClearRadiusPx, visionParams } from './vision';
+import {
+  hearTargets,
+  smellTargets,
+  type PerceiveKind,
+  type SmellCategory,
+} from './senses';
 import type { Building, Entity, GameState, Mob, Vec2, WeaponType } from '@game/shared';
 import { COLORS, TILE_H, TILE_W } from '../config';
 import { worldToScreen, type ScreenPoint } from './iso';
@@ -44,6 +50,8 @@ export class GameRenderer {
   private ghost?: { pos: Vec2; type: Building['type'] };
   private readonly forest: ForestProp[];
   private readonly fogSprite: Sprite;
+  private readonly senseOverlay = new Graphics();
+  private readonly hearLabels: Text[] = [];
 
   constructor(
     private readonly app: Application,
@@ -58,6 +66,9 @@ export class GameRenderer {
     this.fogSprite.anchor.set(0.5);
     this.fogSprite.visible = false;
     this.app.stage.addChild(this.fogSprite);
+
+    // Smell/hearing indicators draw over the fog (so senses pierce the dark).
+    this.app.stage.addChild(this.senseOverlay);
 
     this.hud = new Text({ text: '', style: { fill: 0xe6edf3, fontSize: 14 } });
     this.hud.position.set(12, 12);
@@ -201,6 +212,68 @@ export class GameRenderer {
     } else {
       this.fogSprite.visible = false;
     }
+
+    // Smell + hearing overlays (monster only), drawn over the fog so senses pierce the dark.
+    this.senseOverlay.clear();
+    let labelIdx = 0;
+    if (isMonsterView && curr.monster.evolution) {
+      const skills = curr.monster.evolution.skills;
+      for (const tgt of smellTargets(curr, skills.smell)) {
+        const sp = project(tgt.pos);
+        const color = skills.smell >= 4 ? kindColor(tgt.kind) : categoryColor(tgt.category);
+        if (onScreen(sp, screenW, screenH)) {
+          this.senseOverlay.circle(sp.x, sp.y - 6, 11).stroke({ color, width: 2 });
+        } else {
+          this.drawEdgeArrow(sp, screenW, screenH, color);
+        }
+      }
+      const phase = ((curr.tick + alpha) % 30) / 30;
+      for (const h of hearTargets(curr, skills.hearing)) {
+        const sp = project(h.pos);
+        const color = skills.hearing >= 2 ? kindColor(h.kind) : 0xcfd8ff;
+        this.senseOverlay.circle(sp.x, sp.y, 4 + phase * 12).stroke({ color, width: 2, alpha: 1 - phase });
+        if (skills.hearing >= 3) {
+          const lbl = this.hearLabel(labelIdx++);
+          lbl.text = `${Math.round(h.distance)}m`;
+          lbl.position.set(sp.x + 7, sp.y - 6);
+          lbl.visible = true;
+        }
+      }
+    }
+    for (let i = labelIdx; i < this.hearLabels.length; i++) this.hearLabels[i].visible = false;
+  }
+
+  private hearLabel(i: number): Text {
+    while (this.hearLabels.length <= i) {
+      const t = new Text({ text: '', style: { fill: 0xcfd8ff, fontSize: 11 } });
+      this.app.stage.addChild(t);
+      this.hearLabels.push(t);
+    }
+    return this.hearLabels[i];
+  }
+
+  private drawEdgeArrow(target: ScreenPoint, w: number, h: number, color: number): void {
+    const cx = w / 2;
+    const cy = h / 2;
+    let dx = target.x - cx;
+    let dy = target.y - cy;
+    const len = Math.hypot(dx, dy) || 1;
+    dx /= len;
+    dy /= len;
+    const m = 20;
+    const ex = Math.max(m, Math.min(w - m, target.x));
+    const ey = Math.max(m, Math.min(h - m, target.y));
+    const a = 9;
+    this.senseOverlay
+      .poly([
+        ex + dx * a,
+        ey + dy * a,
+        ex - dy * a * 0.6 - dx * a * 0.4,
+        ey + dx * a * 0.6 - dy * a * 0.4,
+        ex + dy * a * 0.6 - dx * a * 0.4,
+        ey - dx * a * 0.6 - dy * a * 0.4,
+      ])
+      .fill(color);
   }
 
   private shadow(p: ScreenPoint, rw: number): void {
@@ -343,6 +416,36 @@ export class GameRenderer {
 function findEntity(state: GameState, id: number): Entity | undefined {
   if (state.monster.id === id) return state.monster;
   return state.heroes.find((h) => h.id === id);
+}
+
+function onScreen(p: ScreenPoint, w: number, h: number): boolean {
+  return p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h;
+}
+
+function kindColor(kind: PerceiveKind): number {
+  switch (kind) {
+    case 'large':
+      return COLORS.largeBeast;
+    case 'villager':
+      return COLORS.villager;
+    case 'hero':
+      return COLORS.hero;
+    case 'building':
+      return COLORS.core;
+    default:
+      return COLORS.critter; // critter / medium
+  }
+}
+
+function categoryColor(category: SmellCategory): number {
+  switch (category) {
+    case 'rancid':
+      return 0xff6b6b;
+    case 'food':
+      return 0xffd24d;
+    default:
+      return 0x9be7a0; // living
+  }
 }
 
 // Radial gradient: tiny transparent center, opaque dark by ~12% (covers the screen at any scale).
