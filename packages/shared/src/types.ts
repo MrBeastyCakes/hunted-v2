@@ -62,6 +62,7 @@ export interface Mob {
   pos: Vec2;
   state: 'calm' | 'fleeing';
   fleeTicks: number;
+  hp: number;
 }
 
 export interface Herd {

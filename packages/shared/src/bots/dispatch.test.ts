@@ -11,6 +11,7 @@ test('routes the monster id to the monster bot', () => {
       pos: { x: s.monster.pos.x + 5, y: s.monster.pos.y },
       state: 'calm',
       fleeTicks: 0,
+      hp: 16,
     },
   ];
   const input = botThink(s, s.monster.id);
