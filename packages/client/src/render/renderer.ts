@@ -269,10 +269,14 @@ export class GameRenderer {
       this.g.rect(p.x - 2, p.y - 7, 4, 6).fill(c);
       this.g.circle(p.x, p.y - 8, 2).fill(c);
     } else {
-      const c = mob.state === 'fleeing' ? COLORS.mobFlee : COLORS.critter;
-      this.g.ellipse(p.x, p.y - 3, 4, 2.3).fill(c); // body
-      this.g.circle(p.x + 3.5, p.y - 5, 1.6).fill(c); // head
-      this.g.poly([p.x + 3.5, p.y - 6.5, p.x + 2.8, p.y - 8.5, p.x + 4.2, p.y - 8.5]).fill(c); // ear
+      const sc = mob.tier === 'large' ? 1.9 : mob.tier === 'medium' ? 1.4 : 1;
+      const base = mob.tier === 'large' ? COLORS.largeBeast : COLORS.critter;
+      const c = mob.state === 'fleeing' ? COLORS.mobFlee : base;
+      this.g.ellipse(p.x, p.y - 3 * sc, 4 * sc, 2.3 * sc).fill(c); // body
+      this.g.circle(p.x + 3.5 * sc, p.y - 5 * sc, 1.6 * sc).fill(c); // head
+      this.g
+        .poly([p.x + 3.5 * sc, p.y - 6.5 * sc, p.x + 2.8 * sc, p.y - 8.5 * sc, p.x + 4.2 * sc, p.y - 8.5 * sc])
+        .fill(c); // ear
     }
   }
 

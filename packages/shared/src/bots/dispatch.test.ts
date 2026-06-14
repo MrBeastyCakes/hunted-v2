@@ -9,10 +9,11 @@ test('routes the monster id to the monster bot', () => {
       id: 9001,
       herdId: 1,
       species: 'wildlife',
+      tier: 'critter',
       pos: { x: s.monster.pos.x + 5, y: s.monster.pos.y },
       state: 'calm',
       fleeTicks: 0,
-      hp: 16,
+      hp: 6,
     },
   ];
   const input = botThink(s, s.monster.id);

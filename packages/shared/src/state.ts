@@ -4,7 +4,6 @@ import {
   HERO_START_HP,
   MAP_HEIGHT,
   MAP_WIDTH,
-  MOB_HP,
   MOB_PER_HERD,
   MONSTER_SPEED,
   MONSTER_START_HP,
@@ -14,6 +13,7 @@ import {
   UNARMED_DAMAGE,
   UNARMED_RANGE,
   VILLAGERS_AT_START,
+  PREY_STATS,
   WILDLIFE_HERD_COUNT,
 } from './constants';
 import type {
@@ -23,6 +23,7 @@ import type {
   Herd,
   Mob,
   MobSpecies,
+  PreyTier,
   ResourceNode,
   RoleType,
 } from './types';
@@ -80,14 +81,18 @@ export function createInitialState(seed: number): GameState {
     herds.push({ id: herdId, species, home: { ...home } });
     for (let i = 0; i < size; i++) {
       const ang = (i / size) * Math.PI * 2;
+      // Wildlife herds mix tiers (mostly critters, a medium, a large); villagers are their own tier.
+      const tier: PreyTier =
+        species === 'villager' ? 'villager' : i >= 4 ? 'large' : i === 3 ? 'medium' : 'critter';
       mobs.push({
         id: id(),
         herdId,
         species,
+        tier,
         pos: { x: home.x + Math.cos(ang) * 2, y: home.y + Math.sin(ang) * 2 },
         state: 'calm',
         fleeTicks: 0,
-        hp: MOB_HP,
+        hp: PREY_STATS[tier].hp,
       });
     }
   };

@@ -33,11 +33,18 @@ export const HERD_WANDER_RADIUS = 14; // animals roam wider
 export const SCATTER_RADIUS = 7; // panic later, easier to approach
 export const SCATTER_TICKS = 40; // 2s at 20Hz
 export const CATCH_RANGE = 2.2; // bigger bite reach
-export const MOB_HP = 16;
 export const MOB_BITE_DAMAGE = 4; // monster damage per tick to a mob in catch range
 export const HERD_RESPAWN_TICKS = 100; // every 5s
-export const WILDLIFE_XP = 25;
-export const VILLAGER_XP = 120;
+export const PREY_STATS: Record<
+  'critter' | 'medium' | 'large' | 'villager',
+  { hp: number; xp: number }
+> = {
+  critter: { hp: 6, xp: 10 },
+  medium: { hp: 16, xp: 20 },
+  large: { hp: 30, xp: 40 },
+  villager: { hp: 16, xp: 100 },
+};
+export const LARGE_BITE_BACK = 3; // damage a large creature deals to the monster per hunt tick
 
 // --- Economy ---
 export const STARTING_MATERIALS = 60;
