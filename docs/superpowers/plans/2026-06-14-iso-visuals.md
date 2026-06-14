@@ -1,3 +1,103 @@
+# Visual Overhaul: Iso Terrain & Real Shapes (Plan B)
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax.
+
+**Goal:** Make it look like a game: a tiled isometric ground, depth-sorted entities drawn as real shapes (a growing monster, heroes with facing + equipped ring, iso building boxes, critters/villagers, weapon/resource markers) with soft shadows. Code-drawn (PixiJS), no assets. Renderer-only.
+
+**Architecture:** Pure geometry helpers in `render/shapes.ts` (unit-tested); the draw code in `renderer.ts` is build/run-verified. No sim changes.
+
+**Tech Stack:** TypeScript, Vitest, PixiJS 8, Vite.
+
+---
+
+### Task 1: Pure geometry helpers + ground color
+
+**Files:** Create `packages/client/src/render/shapes.ts`, `packages/client/src/render/shapes.test.ts`; modify `packages/client/src/config.ts`
+
+- [ ] **Step 1: Test** (`shapes.test.ts`)
+
+```ts
+import { depthKey, diamondPoints, isoBoxFaces } from './shapes';
+
+test('depthKey sorts by x+y', () => {
+  expect(depthKey(2, 3)).toBe(5);
+  expect(depthKey(0, 0)).toBe(0);
+});
+
+test('diamondPoints returns top,right,bottom,left as a flat array', () => {
+  expect(diamondPoints(10, 20, 4, 2)).toEqual([10, 18, 14, 20, 10, 22, 6, 20]);
+});
+
+test('isoBoxFaces top is the base diamond raised by height', () => {
+  const f = isoBoxFaces(0, 0, 4, 2, 10);
+  // top diamond points all shifted up by 10 vs a base diamond at y=0
+  expect(f.top).toEqual([0, -12, 4, -10, 0, -8, -4, -10]);
+  expect(f.left.length).toBe(8);
+  expect(f.right.length).toBe(8);
+});
+```
+
+- [ ] **Step 2: Run to verify it fails**
+
+Run: `pnpm --filter @game/client test shapes`
+Expected: FAIL — cannot find module `./shapes`.
+
+- [ ] **Step 3: Implement** `shapes.ts`
+
+```ts
+// Pure isometric drawing geometry (screen-space).
+
+export function depthKey(x: number, y: number): number {
+  return x + y;
+}
+
+// A diamond (rotated square) as a flat [x,y,...] array: top, right, bottom, left.
+export function diamondPoints(cx: number, cy: number, hw: number, hh: number): number[] {
+  return [cx, cy - hh, cx + hw, cy, cx, cy + hh, cx - hw, cy];
+}
+
+export interface IsoBoxFaces {
+  top: number[];
+  left: number[];
+  right: number[];
+}
+
+// An isometric box: a top diamond raised by `height`, plus the two camera-facing side faces.
+export function isoBoxFaces(cx: number, cy: number, hw: number, hh: number, height: number): IsoBoxFaces {
+  const top = [cx, cy - hh - height, cx + hw, cy - height, cx, cy + hh - height, cx - hw, cy - height];
+  const left = [cx - hw, cy, cx, cy + hh, cx, cy + hh - height, cx - hw, cy - height];
+  const right = [cx + hw, cy, cx, cy + hh, cx, cy + hh - height, cx + hw, cy - height];
+  return { top, left, right };
+}
+```
+
+- [ ] **Step 4: Add a second ground shade** to `config.ts` `COLORS`:
+```ts
+  ground2: 0x202b22,
+```
+(Keep the existing `ground`.)
+
+- [ ] **Step 5: Run to verify it passes**
+
+Run: `pnpm --filter @game/client test shapes`
+Expected: PASS (3 tests).
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add packages/client/src/render/shapes.ts packages/client/src/render/shapes.test.ts packages/client/src/config.ts
+git commit -m "feat(client): add iso geometry helpers and a second ground shade"
+```
+
+---
+
+### Task 2: Renderer overhaul
+
+**Files:** Replace `packages/client/src/render/renderer.ts`
+
+- [ ] **Step 1: Replace `renderer.ts`** with the full new renderer:
+
+```ts
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import type { Building, Entity, GameState, Mob, Vec2, WeaponType } from '@game/shared';
 import { COLORS, TILE_H, TILE_W } from '../config';
@@ -266,3 +366,51 @@ function findEntity(state: GameState, id: number): Entity | undefined {
   if (state.monster.id === id) return state.monster;
   return state.heroes.find((h) => h.id === id);
 }
+```
+
+- [ ] **Step 2: Type-check + build**
+
+Run: `cd packages/client && ../../node_modules/.bin/tsc.cmd --noEmit && cd ../..`
+Run: `pnpm --filter @game/client build`
+Expected: clean. (If any PixiJS v8 Graphics call mismatches, fix to match the installed API.)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add packages/client/src/render/renderer.ts
+git commit -m "feat(client): iso tiled ground + depth-sorted shaped entities"
+```
+
+---
+
+### Task 3: Sweep + serve
+
+- [ ] **Step 1: Full sweep**
+
+Run: `pnpm -r test`
+Expected: PASS (renderer is untested directly; shapes + all prior suites green).
+
+- [ ] **Step 2: Dev-server smoke check**
+
+Start `pnpm --filter @game/client dev`; fetch `http://localhost:5173/` (HTTP 200, `Choose your side`); stop the server.
+
+- [ ] **Step 3: Manual playtest (human)**
+
+Open it: tiled ground, a chunky monster that grows with level, hero figures with facing + weapon
+rings, iso building boxes, critters/villagers, weapon/resource markers, all with shadows and
+correct overlap (depth). (Deploy happens after Plan A — gathering + roaming.)
+
+---
+
+## Self-Review
+
+**Spec coverage:** iso tiled ground (Task 2) ✓; real shapes for monster/heroes/buildings/mobs/
+weapons/resources + shadows + depth sort + facing + equipped ring + monster grows with level
+(Task 2) ✓; pure geometry tested (Task 1) ✓. No sim changes. Gathering/roaming = Plan A.
+
+**Placeholder scan:** complete code; no TBD. ✓
+
+**Type consistency:** `isoBoxFaces`/`diamondPoints`/`depthKey` (Task 1) used by renderer; `Mob`/
+`WeaponType`/`Building`/`Entity` from `@game/shared`; `COLORS.ground2` added (Task 1) used in
+renderer; `BUILDING_STYLE` keyed by `Building['type']` (all 5 building types). Pixi v8 Graphics
+chaining (`poly().fill().stroke()`, `circle`, `ellipse`, `rect`) as used elsewhere. ✓

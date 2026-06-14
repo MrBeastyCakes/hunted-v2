@@ -5,6 +5,7 @@ export const TILE_H = 16;
 export const COLORS = {
   background: 0x11151c,
   ground: 0x1b2430,
+  ground2: 0x202b22,
   grid: 0x263041,
   monster: 0xff4d4d,
   hero: 0x4da3ff,
