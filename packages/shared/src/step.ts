@@ -3,6 +3,8 @@ import { economySystem } from './systems/economy';
 import { evolutionSystem } from './systems/evolution';
 import { buildingSystem } from './systems/building';
 import { feedingSystem } from './systems/feeding';
+import { herdSystem } from './systems/herd';
+import { huntingSystem } from './systems/hunting';
 import { movementSystem } from './systems/movement';
 import { winConditionSystem } from './systems/winCondition';
 import type { GameState, InputMap } from './types';
@@ -14,6 +16,8 @@ export function step(state: GameState, inputs: InputMap): GameState {
   if (next.phase !== 'playing') return next;
 
   movementSystem(next, inputs);
+  herdSystem(next);
+  huntingSystem(next);
   feedingSystem(next, inputs);
   economySystem(next);
   buildingSystem(next, inputs);
