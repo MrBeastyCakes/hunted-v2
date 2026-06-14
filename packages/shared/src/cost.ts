@@ -1,7 +1,7 @@
 import { BUILD_COSTS, BUILDER_DISCOUNT } from './constants';
 import type { RoleType } from './types';
 
-export type BuildableType = 'generator' | 'tower' | 'workshop';
+export type BuildableType = 'generator' | 'tower' | 'workshop' | 'blacksmith';
 
 // Material cost of a blueprint for a given role (builder gets a discount).
 export function buildCost(role: RoleType | undefined, type: BuildableType): number {

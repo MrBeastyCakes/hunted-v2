@@ -9,6 +9,7 @@ const BUILDING_COLOR: Record<Building['type'], number> = {
   tower: COLORS.tower,
   generator: COLORS.generator,
   workshop: COLORS.workshop,
+  blacksmith: COLORS.blacksmith,
 };
 
 // Draws GameState each frame using immediate-mode Graphics. Few entities -> redraw is cheap.

@@ -13,6 +13,7 @@ export const COLORS = {
   tower: 0xb392f0,
   generator: 0x39c5cf,
   workshop: 0xf0883e,
+  blacksmith: 0x8b949e,
   wildlife: 0x57ab5a,
   villager: 0xf2b66d,
   mobFlee: 0xffe08a,
