@@ -1,18 +1,33 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
-import type { Building, Entity, GameState, Vec2 } from '@game/shared';
+import type { Building, Entity, GameState, Mob, Vec2, WeaponType } from '@game/shared';
 import { COLORS, TILE_H, TILE_W } from '../config';
 import { worldToScreen, type ScreenPoint } from './iso';
 import { lerpVec } from './interpolate';
+import { isoBoxFaces } from './shapes';
 
-const BUILDING_COLOR: Record<Building['type'], number> = {
-  core: COLORS.core,
-  tower: COLORS.tower,
-  generator: COLORS.generator,
-  workshop: COLORS.workshop,
-  blacksmith: COLORS.blacksmith,
+const GROUND_STEP = 10;
+
+const BUILDING_STYLE: Record<Building['type'], { hw: number; hh: number; h: number; color: number }> = {
+  core: { hw: 16, hh: 8, h: 20, color: COLORS.core },
+  tower: { hw: 9, hh: 4.5, h: 24, color: COLORS.tower },
+  generator: { hw: 11, hh: 5.5, h: 12, color: COLORS.generator },
+  workshop: { hw: 11, hh: 5.5, h: 14, color: COLORS.workshop },
+  blacksmith: { hw: 12, hh: 6, h: 16, color: COLORS.blacksmith },
 };
 
-// Draws GameState each frame using immediate-mode Graphics. Few entities -> redraw is cheap.
+function shade(color: number, factor: number): number {
+  const r = Math.min(255, Math.floor(((color >> 16) & 0xff) * factor));
+  const g = Math.min(255, Math.floor(((color >> 8) & 0xff) * factor));
+  const b = Math.min(255, Math.floor((color & 0xff) * factor));
+  return (r << 16) | (g << 8) | b;
+}
+
+interface Drawable {
+  x: number;
+  y: number;
+  render: (p: ScreenPoint) => void;
+}
+
 export class GameRenderer {
   private readonly world = new Container();
   private readonly g = new Graphics();
@@ -56,7 +71,6 @@ export class GameRenderer {
     this.ghost = pos && type ? { pos, type } : undefined;
   }
 
-  // prev/curr are consecutive sim states; alpha is 0..1 progress between them.
   render(prev: GameState, curr: GameState, alpha: number): void {
     const g = this.g;
     g.clear();
@@ -64,87 +78,73 @@ export class GameRenderer {
     const screenW = this.app.screen.width;
     const screenH = this.app.screen.height;
 
-    // Camera: center the controlled actor (use its interpolated position).
-    const controlledPos = this.interpPos(prev, curr, this.cameraTargetId, alpha) ?? curr.monster.pos;
-    const camIso = worldToScreen(controlledPos, TILE_W, TILE_H, { x: 0, y: 0 });
+    const camPos = this.interpPos(prev, curr, this.cameraTargetId, alpha) ?? curr.monster.pos;
+    const camIso = worldToScreen(camPos, TILE_W, TILE_H, { x: 0, y: 0 });
     const origin: ScreenPoint = { x: screenW / 2 - camIso.x, y: screenH / 2 - camIso.y };
     this.lastOrigin = origin;
-
     const project = (p: Vec2) => worldToScreen(p, TILE_W, TILE_H, origin);
 
-    // Ground diamond (map bounds corners).
-    const c0 = project({ x: 0, y: 0 });
-    const c1 = project({ x: curr.map.width, y: 0 });
-    const c2 = project({ x: curr.map.width, y: curr.map.height });
-    const c3 = project({ x: 0, y: curr.map.height });
-    g.poly([c0.x, c0.y, c1.x, c1.y, c2.x, c2.y, c3.x, c3.y]).fill(COLORS.ground);
-
-    // Resource + wildlife nodes.
-    for (const n of curr.map.resourceNodes) this.dot(project(n.pos), 5, COLORS.resource);
-    for (const mob of curr.map.mobs) {
-      const color =
-        mob.state === 'fleeing'
-          ? COLORS.mobFlee
-          : mob.species === 'villager'
-            ? COLORS.villager
-            : COLORS.wildlife;
-      this.dot(project(mob.pos), mob.species === 'villager' ? 4 : 3, color);
+    // Isometric tiled ground (checkerboard).
+    const W = curr.map.width;
+    const H = curr.map.height;
+    for (let i = 0; i * GROUND_STEP < W; i++) {
+      for (let j = 0; j * GROUND_STEP < H; j++) {
+        const a = project({ x: i * GROUND_STEP, y: j * GROUND_STEP });
+        const b = project({ x: (i + 1) * GROUND_STEP, y: j * GROUND_STEP });
+        const c = project({ x: (i + 1) * GROUND_STEP, y: (j + 1) * GROUND_STEP });
+        const d = project({ x: i * GROUND_STEP, y: (j + 1) * GROUND_STEP });
+        const color = (i + j) % 2 === 0 ? COLORS.ground : COLORS.ground2;
+        g.poly([a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y]).fill(color);
+      }
     }
 
-    // Weapon pickups on the rack.
-    for (const w of curr.map.weapons) {
-      this.dot(project(w.pos), 4, w.type === 'bow' ? COLORS.bow : COLORS.sword);
+    // Collect depth-sorted drawables.
+    const drawables: Drawable[] = [];
+    for (const n of curr.map.resourceNodes) {
+      drawables.push({ x: n.pos.x, y: n.pos.y, render: (p) => this.drawResource(p, n.amount) });
     }
-
-    // Buildings.
     for (const b of curr.buildings) {
-      const p = project(b.pos);
-      const size = b.type === 'core' ? 16 : 11;
-      g.rect(p.x - size / 2, p.y - size, size, size).fill(BUILDING_COLOR[b.type]);
-      this.hpBar(p.x, p.y - size - 6, b.health.hp / b.health.maxHp);
+      drawables.push({ x: b.pos.x, y: b.pos.y, render: (p) => this.drawBuilding(p, b) });
+    }
+    for (const mob of curr.map.mobs) {
+      drawables.push({ x: mob.pos.x, y: mob.pos.y, render: (p) => this.drawMob(p, mob) });
+    }
+    for (const w of curr.map.weapons) {
+      drawables.push({ x: w.pos.x, y: w.pos.y, render: (p) => this.drawWeapon(p, w.type) });
+    }
+    for (const h of curr.heroes) {
+      if (!h.alive) continue;
+      const pos = this.interpEntity(prev, curr, h, alpha);
+      const facing = this.facing(prev, curr, h.id);
+      drawables.push({ x: pos.x, y: pos.y, render: (p) => this.drawHero(p, h, facing) });
+    }
+    if (curr.monster.alive) {
+      const pos = this.interpEntity(prev, curr, curr.monster, alpha);
+      drawables.push({ x: pos.x, y: pos.y, render: (p) => this.drawMonster(p, curr.monster) });
     }
 
-    // Translucent build ghost during placement.
+    drawables.sort((p, q) => p.x + p.y - (q.x + q.y));
+    for (const d of drawables) d.render(project({ x: d.x, y: d.y }));
+
+    // Build ghost (translucent top diamond).
     if (this.ghost) {
       const gp = project(this.ghost.pos);
-      const size = 11;
-      this.g
-        .rect(gp.x - size / 2, gp.y - size, size, size)
-        .fill({ color: BUILDING_COLOR[this.ghost.type], alpha: 0.45 });
+      const st = BUILDING_STYLE[this.ghost.type];
+      const f = isoBoxFaces(gp.x, gp.y, st.hw, st.hh, st.h);
+      g.poly(f.top).fill({ color: st.color, alpha: 0.4 });
     }
 
-    // "Campfire" label on the core (its level-1 name).
+    // Campfire label.
     const core = curr.buildings.find((b) => b.type === 'core');
     if (core) {
       const cp = project(core.pos);
-      this.campfireLabel.position.set(cp.x, cp.y - 22);
+      this.campfireLabel.position.set(cp.x, cp.y - BUILDING_STYLE.core.h - 8);
       this.campfireLabel.visible = true;
     } else {
       this.campfireLabel.visible = false;
     }
 
-    // Heroes.
-    for (const h of curr.heroes) {
-      if (!h.alive) continue;
-      const p = project(this.interpEntity(prev, curr, h, alpha));
-      const color = h.id === this.controlledId ? COLORS.heroControlled : COLORS.hero;
-      this.dot(p, 7, color);
-      this.hpBar(p.x, p.y - 14, h.health.hp / h.health.maxHp);
-      if (h.equipped) {
-        const ring = h.equipped === 'bow' ? COLORS.bow : COLORS.sword;
-        this.g.circle(p.x, p.y, 9).stroke({ color: ring, width: 1.5 });
-      }
-    }
-
-    // Monster.
-    if (curr.monster.alive) {
-      const p = project(this.interpEntity(prev, curr, curr.monster, alpha));
-      const radius = 8 + (curr.monster.evolution?.stage ?? 1) * 2;
-      this.dot(p, radius, COLORS.monster);
-      this.hpBar(p.x, p.y - radius - 6, curr.monster.health.hp / curr.monster.health.maxHp);
-    }
-
-    // HUD.
+    // HUD + banner.
     const m = curr.monster;
     const me = findEntity(curr, this.controlledId);
     const spectating = me ? !me.alive : false;
@@ -154,26 +154,104 @@ export class GameRenderer {
       `tick: ${curr.tick}` +
       (spectating ? `\nSPECTATING — Tab/Space to cycle` : '');
 
-    // Banner on game end.
     this.banner.position.set(screenW / 2, screenH / 2);
     if (curr.phase === 'monsterWon') this.banner.text = 'MONSTER WINS';
     else if (curr.phase === 'buildersWon') this.banner.text = 'BUILDERS WIN';
     else this.banner.text = '';
   }
 
-  private dot(p: ScreenPoint, r: number, color: number): void {
-    this.g.circle(p.x, p.y, r).fill(color);
+  private shadow(p: ScreenPoint, rw: number): void {
+    this.g.ellipse(p.x, p.y, rw, rw * 0.5).fill({ color: 0x000000, alpha: 0.25 });
   }
 
   private hpBar(cx: number, top: number, frac: number): void {
     const w = 20;
-    const clamped = Math.max(0, Math.min(1, frac));
+    const c = Math.max(0, Math.min(1, frac));
     this.g.rect(cx - w / 2, top, w, 3).fill(COLORS.hpBack);
-    this.g.rect(cx - w / 2, top, w * clamped, 3).fill(COLORS.hpFill);
+    this.g.rect(cx - w / 2, top, w * c, 3).fill(COLORS.hpFill);
   }
 
-  private interpEntity(prev: GameState, curr: GameState, entity: Entity, alpha: number): Vec2 {
-    return this.interpPos(prev, curr, entity.id, alpha) ?? entity.pos;
+  private drawBuilding(p: ScreenPoint, b: Building): void {
+    const st = BUILDING_STYLE[b.type];
+    this.shadow(p, st.hw);
+    const f = isoBoxFaces(p.x, p.y, st.hw, st.hh, st.h);
+    this.g.poly(f.left).fill(shade(st.color, 0.6));
+    this.g.poly(f.right).fill(shade(st.color, 0.8));
+    this.g.poly(f.top).fill(st.color).stroke({ color: shade(st.color, 0.5), width: 1 });
+    this.hpBar(p.x, p.y - st.h - st.hh - 6, b.health.hp / b.health.maxHp);
+  }
+
+  private drawMonster(p: ScreenPoint, m: Entity): void {
+    const stage = m.evolution?.stage ?? 1;
+    const r = 9 + stage * 2.5;
+    this.shadow(p, r);
+    const n = 8;
+    const spikes: number[] = [];
+    for (let k = 0; k < n; k++) {
+      const ang = (k / n) * Math.PI * 2;
+      const rr = k % 2 === 0 ? r + 4 : r;
+      spikes.push(p.x + Math.cos(ang) * rr, p.y - r * 0.6 + Math.sin(ang) * rr * 0.7);
+    }
+    this.g.poly(spikes).fill(COLORS.monster).stroke({ color: 0x7a1010, width: 1.5 });
+    this.g.circle(p.x - r * 0.35, p.y - r * 0.7, 2).fill(0xffffff);
+    this.g.circle(p.x + r * 0.35, p.y - r * 0.7, 2).fill(0xffffff);
+    this.hpBar(p.x, p.y - r - 12, m.health.hp / m.health.maxHp);
+  }
+
+  private drawHero(p: ScreenPoint, h: Entity, facing: Vec2): void {
+    this.shadow(p, 6);
+    const color = h.id === this.controlledId ? COLORS.heroControlled : COLORS.hero;
+    this.g.circle(p.x, p.y - 7, 6).fill(color).stroke({ color: 0x0d1117, width: 1 });
+    const len = Math.hypot(facing.x, facing.y);
+    if (len > 0) {
+      const fx = facing.x / len;
+      const fy = facing.y / len;
+      const tipx = p.x + fx * 9;
+      const tipy = p.y - 7 + fy * 4.5;
+      this.g
+        .poly([tipx, tipy, p.x - fy * 3, p.y - 7 + fx * 1.5, p.x + fy * 3, p.y - 7 - fx * 1.5])
+        .fill(0xe6edf3);
+    }
+    if (h.equipped) {
+      const ring = h.equipped === 'bow' ? COLORS.bow : COLORS.sword;
+      this.g.circle(p.x, p.y - 7, 9).stroke({ color: ring, width: 1.5 });
+    }
+    this.hpBar(p.x, p.y - 18, h.health.hp / h.health.maxHp);
+  }
+
+  private drawMob(p: ScreenPoint, mob: Mob): void {
+    this.shadow(p, 3);
+    if (mob.species === 'villager') {
+      const c = mob.state === 'fleeing' ? COLORS.mobFlee : COLORS.villager;
+      this.g.rect(p.x - 2, p.y - 7, 4, 6).fill(c);
+      this.g.circle(p.x, p.y - 8, 2).fill(c);
+    } else {
+      const c = mob.state === 'fleeing' ? COLORS.mobFlee : COLORS.wildlife;
+      this.g.ellipse(p.x, p.y - 3, 4, 2.5).fill(c);
+      this.g.circle(p.x + 3, p.y - 4, 1.6).fill(c);
+    }
+  }
+
+  private drawWeapon(p: ScreenPoint, type: WeaponType): void {
+    const c = type === 'bow' ? COLORS.bow : COLORS.sword;
+    this.g.poly([p.x, p.y - 6, p.x + 3, p.y - 3, p.x, p.y, p.x - 3, p.y - 3]).fill(c);
+  }
+
+  private drawResource(p: ScreenPoint, amount: number): void {
+    if (amount <= 0) return;
+    this.shadow(p, 4);
+    this.g.poly([p.x, p.y - 8, p.x + 5, p.y - 2, p.x, p.y, p.x - 5, p.y - 2]).fill(COLORS.resource);
+  }
+
+  private facing(prev: GameState, curr: GameState, id: number): Vec2 {
+    const a = findEntity(prev, id);
+    const b = findEntity(curr, id);
+    if (!a || !b) return { x: 0, y: 0 };
+    return { x: b.pos.x - a.pos.x, y: b.pos.y - a.pos.y };
+  }
+
+  private interpEntity(prev: GameState, curr: GameState, e: Entity, alpha: number): Vec2 {
+    return this.interpPos(prev, curr, e.id, alpha) ?? e.pos;
   }
 
   private interpPos(prev: GameState, curr: GameState, id: number, alpha: number): Vec2 | undefined {
