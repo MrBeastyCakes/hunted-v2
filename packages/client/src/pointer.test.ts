@@ -139,3 +139,27 @@ test('controlToInput with no control is a no-op', () => {
   const s = createInitialState(1);
   expect(controlToInput(s, s.heroes[0].id, {}, 0.6).move).toEqual({ x: 0, y: 0 });
 });
+
+test('pickTarget grabs a weapon pickup', () => {
+  const s = createInitialState(1);
+  s.map.weapons = [{ id: 9001, type: 'sword', pos: { x: 50, y: 50 } }];
+  s.map.mobs = [];
+  const pick = pickTarget(s, { x: 50, y: 50 }, 3.5);
+  expect(pick).toEqual({ kind: 'weapon', id: 9001, pos: { x: 50, y: 50 } });
+});
+
+test('a hero tapping a blacksmith opens the craft menu', () => {
+  const s = createInitialState(1);
+  s.buildings.push({ id: 9002, type: 'blacksmith', pos: { x: 60, y: 60 }, health: { hp: 35, maxHp: 35 }, level: 1 });
+  s.map.mobs = [];
+  const intent = resolveTapIntent(s, s.heroes[0].id, { x: 60, y: 60 }, 3.5);
+  expect(intent).toEqual({ kind: 'openCraftMenu' });
+});
+
+test('a hero tapping a weapon moves to it (to equip)', () => {
+  const s = createInitialState(1);
+  s.map.weapons = [{ id: 9003, type: 'bow', pos: { x: 40, y: 40 } }];
+  s.map.mobs = [];
+  const intent = resolveTapIntent(s, s.heroes[0].id, { x: 40, y: 40 }, 3.5);
+  expect(intent).toEqual({ kind: 'move', point: { x: 40, y: 40 } });
+});

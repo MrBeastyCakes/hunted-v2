@@ -8,8 +8,8 @@ import {
 } from './buildFlow';
 import { createInitialState } from '@game/shared';
 
-test('BLUEPRINTS are the three buildable structures', () => {
-  expect(BLUEPRINTS).toEqual(['tower', 'generator', 'workshop']);
+test('BLUEPRINTS are the buildable structures', () => {
+  expect(BLUEPRINTS).toEqual(['tower', 'generator', 'workshop', 'blacksmith']);
 });
 
 test('open -> menu, select -> placing', () => {

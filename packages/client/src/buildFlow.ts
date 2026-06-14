@@ -7,7 +7,7 @@ import {
   type Vec2,
 } from '@game/shared';
 
-export const BLUEPRINTS: BuildableType[] = ['tower', 'generator', 'workshop'];
+export const BLUEPRINTS: BuildableType[] = ['tower', 'generator', 'workshop', 'blacksmith'];
 
 export interface BuildFlow {
   phase: 'idle' | 'menu' | 'placing';
