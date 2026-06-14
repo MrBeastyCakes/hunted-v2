@@ -2,6 +2,7 @@ import { createInitialState } from './state';
 import {
   CORE_START_HP,
   MONSTER_START_HP,
+  MONSTER_START_XP,
   MOB_PER_HERD,
   UNARMED_DAMAGE,
   UNARMED_RANGE,
@@ -49,6 +50,12 @@ test('spawns wildlife herds and one villager herd at the campfire', () => {
   expect(wildlife).toHaveLength(WILDLIFE_HERD_COUNT * MOB_PER_HERD);
   expect(villagers).toHaveLength(VILLAGERS_AT_START);
   expect(s.map.mobs.every((m) => m.state === 'calm')).toBe(true);
+});
+
+test('the monster starts with one free level of XP to spend on spawn', () => {
+  const s = createInitialState(1);
+  expect(s.monster.evolution!.xp).toBe(MONSTER_START_XP);
+  expect(s.monster.evolution!.level).toBe(1);
 });
 
 test('heroes start unarmed with weak melee combat', () => {

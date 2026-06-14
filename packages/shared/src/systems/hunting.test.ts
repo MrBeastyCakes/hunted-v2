@@ -4,6 +4,7 @@ import { MOB_BITE_DAMAGE, MOB_HP, NODE_RESPAWN_TICKS, VILLAGER_XP, WILDLIFE_XP }
 
 test('a mob in catch range loses HP but is not removed until it dies', () => {
   const s = createInitialState(1);
+  s.monster.evolution!.xp = 0;
   const mob = s.map.mobs.find((m) => m.species === 'wildlife')!;
   s.map.mobs = [mob];
   s.monster.pos = { ...mob.pos };
@@ -15,6 +16,7 @@ test('a mob in catch range loses HP but is not removed until it dies', () => {
 
 test('enough bites kill a wildlife mob and grant WILDLIFE_XP', () => {
   const s = createInitialState(1);
+  s.monster.evolution!.xp = 0;
   const mob = s.map.mobs.find((m) => m.species === 'wildlife')!;
   s.map.mobs = [mob];
   s.monster.pos = { ...mob.pos };
@@ -26,6 +28,7 @@ test('enough bites kill a wildlife mob and grant WILDLIFE_XP', () => {
 
 test('a villager grants the larger VILLAGER_XP when killed', () => {
   const s = createInitialState(1);
+  s.monster.evolution!.xp = 0;
   const v = s.map.mobs.find((m) => m.species === 'villager')!;
   s.map.mobs = [v];
   s.monster.pos = { ...v.pos };
@@ -36,6 +39,7 @@ test('a villager grants the larger VILLAGER_XP when killed', () => {
 
 test('mobs out of catch range are untouched', () => {
   const s = createInitialState(1);
+  s.monster.evolution!.xp = 0;
   s.monster.pos = { x: 0, y: 0 };
   const before = s.map.mobs.map((m) => m.hp);
   huntingSystem(s);
@@ -62,8 +66,6 @@ test('respawn refills a depleted herd on the respawn tick', () => {
   const herd = s.map.herds.find((h) => h.species === 'wildlife')!;
   s.map.mobs = s.map.mobs.filter((m) => m.herdId !== herd.id);
   s.monster.pos = { x: 0, y: 0 };
-  s.tick = NODE_RESPAWN_TICKS; // also a herd respawn multiple? use HERD_RESPAWN_TICKS below instead
-  // use the herd respawn tick explicitly
   s.tick = 100;
   huntingSystem(s);
   const count = s.map.mobs.filter((m) => m.herdId === herd.id).length;

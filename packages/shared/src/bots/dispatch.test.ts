@@ -3,6 +3,7 @@ import { createInitialState } from '../state';
 
 test('routes the monster id to the monster bot', () => {
   const s = createInitialState(123);
+  s.monster.evolution!.xp = 0; // don't auto-spend; assert hunting movement
   s.map.mobs = [
     {
       id: 9001,

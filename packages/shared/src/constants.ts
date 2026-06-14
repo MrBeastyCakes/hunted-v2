@@ -18,6 +18,7 @@ import type { Combat } from './types';
 
 // --- Monster skill tree ---
 export const XP_PER_LEVEL_COST = 25; // cost to reach level n is XP_PER_LEVEL_COST * n
+export const MONSTER_START_XP = 50; // one free first-level pick on spawn (= levelCost at level 1)
 export const SKILL_MAX_RANK = 4;
 export const LEVEL_HP_BONUS = 25; // +maxHp (and heal) per level gained
 export const LEVEL_DAMAGE_BONUS = 2; // +combat.damage per level gained

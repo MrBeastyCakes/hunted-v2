@@ -8,6 +8,7 @@ import {
   MOB_PER_HERD,
   MONSTER_SPEED,
   MONSTER_START_HP,
+  MONSTER_START_XP,
   RESOURCE_NODE_AMOUNT,
   STARTING_MATERIALS,
   UNARMED_DAMAGE,
@@ -41,7 +42,7 @@ export function createInitialState(seed: number): GameState {
     speed: MONSTER_SPEED,
     health: { hp: MONSTER_START_HP, maxHp: MONSTER_START_HP },
     alive: true,
-    evolution: { xp: 0, level: 1, skills: { vision: 0, hearing: 0, smell: 0 } },
+    evolution: { xp: MONSTER_START_XP, level: 1, skills: { vision: 0, hearing: 0, smell: 0 } },
     combat: { damage: 5, range: 2, cooldown: 10, cooldownRemaining: 0 },
   };
 
