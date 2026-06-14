@@ -14,6 +14,8 @@ export const COLORS = {
   generator: 0x39c5cf,
   workshop: 0xf0883e,
   wildlife: 0x57ab5a,
+  villager: 0xf2b66d,
+  mobFlee: 0xffe08a,
   resource: 0x2f81f7,
   hpBack: 0x30363d,
   hpFill: 0x3fb950,

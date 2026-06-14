@@ -79,8 +79,16 @@ export class GameRenderer {
     g.poly([c0.x, c0.y, c1.x, c1.y, c2.x, c2.y, c3.x, c3.y]).fill(COLORS.ground);
 
     // Resource + wildlife nodes.
-    for (const n of curr.map.wildlifeNodes) this.dot(project(n.pos), 5, COLORS.wildlife);
     for (const n of curr.map.resourceNodes) this.dot(project(n.pos), 5, COLORS.resource);
+    for (const mob of curr.map.mobs) {
+      const color =
+        mob.state === 'fleeing'
+          ? COLORS.mobFlee
+          : mob.species === 'villager'
+            ? COLORS.villager
+            : COLORS.wildlife;
+      this.dot(project(mob.pos), mob.species === 'villager' ? 4 : 3, color);
+    }
 
     // Buildings.
     for (const b of curr.buildings) {
@@ -132,7 +140,7 @@ export class GameRenderer {
     const spectating = me ? !me.alive : false;
     this.hud.text =
       `materials: ${Math.floor(curr.resources.materials)}\n` +
-      `monster: stage ${m.evolution?.stage ?? 1}  hp ${Math.ceil(m.health.hp)}/${m.health.maxHp}  xp ${Math.floor(m.evolution?.xp ?? 0)}\n` +
+      `monster: L${m.evolution?.stage ?? 1}/5  hp ${Math.ceil(m.health.hp)}/${m.health.maxHp}  xp ${Math.floor(m.evolution?.xp ?? 0)}\n` +
       `tick: ${curr.tick}` +
       (spectating ? `\nSPECTATING — Tab/Space to cycle` : '');
 
