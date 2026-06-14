@@ -1,5 +1,6 @@
-import { Application, Container, Graphics, Text } from 'pixi.js';
+import { Application, BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { RESOURCE_NODE_AMOUNT } from '@game/shared';
+import { visionParams } from './vision';
 import type { Building, Entity, GameState, Mob, Vec2, WeaponType } from '@game/shared';
 import { COLORS, TILE_H, TILE_W } from '../config';
 import { worldToScreen, type ScreenPoint } from './iso';
@@ -38,8 +39,12 @@ export class GameRenderer {
   private readonly campfireLabel: Text;
   private cameraTargetId: number;
   private lastOrigin: ScreenPoint = { x: 0, y: 0 };
+  private lastTileW = TILE_W;
+  private lastTileH = TILE_H;
   private ghost?: { pos: Vec2; type: Building['type'] };
   private readonly forest: ForestProp[];
+  private readonly blurFilter = new BlurFilter({ strength: 0 });
+  private readonly fogSprite: Sprite;
 
   constructor(
     private readonly app: Application,
@@ -49,6 +54,11 @@ export class GameRenderer {
     this.forest = generateForest(1337, 100, 100, 70, { x: 50, y: 50, r: 18 });
     this.world.addChild(this.g);
     this.app.stage.addChild(this.world);
+
+    this.fogSprite = new Sprite(makeFogTexture());
+    this.fogSprite.anchor.set(0.5);
+    this.fogSprite.visible = false;
+    this.app.stage.addChild(this.fogSprite);
 
     this.hud = new Text({ text: '', style: { fill: 0xe6edf3, fontSize: 14 } });
     this.hud.position.set(12, 12);
@@ -71,6 +81,10 @@ export class GameRenderer {
     return this.lastOrigin;
   }
 
+  cameraTile(): { w: number; h: number } {
+    return { w: this.lastTileW, h: this.lastTileH };
+  }
+
   setGhost(pos: Vec2 | undefined, type?: Building['type']): void {
     this.ghost = pos && type ? { pos, type } : undefined;
   }
@@ -82,11 +96,20 @@ export class GameRenderer {
     const screenW = this.app.screen.width;
     const screenH = this.app.screen.height;
 
+    const isMonsterView = this.controlledId === curr.monster.id && curr.monster.alive;
+    const vis = isMonsterView
+      ? visionParams(curr.monster.evolution?.skills.vision ?? 0)
+      : { fogRadius: null as number | null, blur: 0, zoom: 1 };
+    const tw = TILE_W * vis.zoom;
+    const th = TILE_H * vis.zoom;
+
     const camPos = this.interpPos(prev, curr, this.cameraTargetId, alpha) ?? curr.monster.pos;
-    const camIso = worldToScreen(camPos, TILE_W, TILE_H, { x: 0, y: 0 });
+    const camIso = worldToScreen(camPos, tw, th, { x: 0, y: 0 });
     const origin: ScreenPoint = { x: screenW / 2 - camIso.x, y: screenH / 2 - camIso.y };
     this.lastOrigin = origin;
-    const project = (p: Vec2) => worldToScreen(p, TILE_W, TILE_H, origin);
+    this.lastTileW = tw;
+    this.lastTileH = th;
+    const project = (p: Vec2) => worldToScreen(p, tw, th, origin);
 
     // Isometric tiled ground (checkerboard).
     const W = curr.map.width;
@@ -166,6 +189,18 @@ export class GameRenderer {
     if (curr.phase === 'monsterWon') this.banner.text = 'MONSTER WINS';
     else if (curr.phase === 'buildersWon') this.banner.text = 'BUILDERS WIN';
     else this.banner.text = '';
+
+    // Vision: blur the world at low ranks; dim everything but a clear bubble.
+    this.blurFilter.strength = vis.blur;
+    this.world.filters = vis.blur > 0 ? [this.blurFilter] : [];
+    if (vis.fogRadius !== null) {
+      this.fogSprite.visible = true;
+      this.fogSprite.position.set(screenW / 2, screenH / 2);
+      const clearPx = (this.fogSprite.texture.width / 2) * 0.06;
+      this.fogSprite.scale.set(vis.fogRadius / clearPx);
+    } else {
+      this.fogSprite.visible = false;
+    }
   }
 
   private shadow(p: ScreenPoint, rw: number): void {
@@ -304,4 +339,22 @@ export class GameRenderer {
 function findEntity(state: GameState, id: number): Entity | undefined {
   if (state.monster.id === id) return state.monster;
   return state.heroes.find((h) => h.id === id);
+}
+
+// Radial gradient: tiny transparent center, opaque dark by ~12% (covers the screen at any scale).
+function makeFogTexture(): Texture {
+  const size = 1024;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const c = size / 2;
+  const grad = ctx.createRadialGradient(c, c, 0, c, c, c);
+  grad.addColorStop(0.0, 'rgba(8,10,14,0)');
+  grad.addColorStop(0.06, 'rgba(8,10,14,0)');
+  grad.addColorStop(0.12, 'rgba(8,10,14,0.96)');
+  grad.addColorStop(1.0, 'rgba(8,10,14,0.98)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  return Texture.from(canvas);
 }

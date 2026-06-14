@@ -46,7 +46,8 @@ export type TapIntent =
   | { kind: 'attack'; point: Vec2 }
   | { kind: 'spectate'; actorId: EntityId }
   | { kind: 'openBuildMenu' }
-  | { kind: 'openCraftMenu' };
+  | { kind: 'openCraftMenu' }
+  | { kind: 'openSkillMenu' };
 
 // Maps a tapped world point to an intent, given who the player controls.
 export function resolveTapIntent(
@@ -68,6 +69,7 @@ export function resolveTapIntent(
 
   const isMonster = controlledId === state.monster.id;
   if (pick) {
+    if (isMonster && pick.kind === 'monster') return { kind: 'openSkillMenu' };
     if (isMonster && pick.kind === 'mob') return { kind: 'chase', mobId: pick.id };
     if (isMonster && (pick.kind === 'building' || pick.kind === 'hero')) {
       return { kind: 'attack', point: pick.pos };
@@ -111,6 +113,7 @@ export function applyIntent(control: PointerControl, intent: TapIntent): Pointer
     case 'spectate':
     case 'openBuildMenu':
     case 'openCraftMenu':
+    case 'openSkillMenu':
       return control; // handled elsewhere (camera / menus), not by movement
   }
 }
