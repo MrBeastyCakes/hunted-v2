@@ -1,4 +1,4 @@
-import type { BuildableType } from '@game/shared';
+import type { BuildableType, WeaponType } from '@game/shared';
 
 export interface BlueprintItem {
   type: BuildableType;
@@ -76,6 +76,69 @@ export function showBuildMenu(
 
 export function hideBuildMenu(): void {
   if (panel) panel.style.display = 'none';
+}
+
+export interface WeaponItemChoice {
+  type: WeaponType;
+  cost: number;
+  affordable: boolean;
+}
+
+let craftPanel: HTMLDivElement | undefined;
+
+function ensureCraftPanel(): HTMLDivElement {
+  if (craftPanel) return craftPanel;
+  craftPanel = document.createElement('div');
+  craftPanel.id = 'craftmenu';
+  Object.assign(craftPanel.style, {
+    position: 'fixed',
+    left: '50%',
+    bottom: '24px',
+    transform: 'translateX(-50%)',
+    display: 'none',
+    gap: '8px',
+    padding: '10px',
+    background: '#161b22ee',
+    border: '1px solid #f2b66d',
+    borderRadius: '10px',
+    zIndex: '20',
+  } satisfies Partial<CSSStyleDeclaration>);
+  document.body.appendChild(craftPanel);
+  return craftPanel;
+}
+
+// Shows the weapon craft menu; calls onSelect(type) or onCancel and hides itself.
+export function showCraftMenu(
+  items: WeaponItemChoice[],
+  onSelect: (type: WeaponType) => void,
+  onCancel: () => void,
+): void {
+  const el = ensureCraftPanel();
+  el.innerHTML = '';
+  el.style.display = 'flex';
+  for (const item of items) {
+    const btn = document.createElement('button');
+    btn.textContent = `${item.type} (${item.cost})`;
+    btn.disabled = !item.affordable;
+    styleButton(btn, item.affordable);
+    btn.addEventListener('click', () => {
+      hideCraftMenu();
+      onSelect(item.type);
+    });
+    el.appendChild(btn);
+  }
+  const cancel = document.createElement('button');
+  cancel.textContent = 'Cancel';
+  styleButton(cancel, true);
+  cancel.addEventListener('click', () => {
+    hideCraftMenu();
+    onCancel();
+  });
+  el.appendChild(cancel);
+}
+
+export function hideCraftMenu(): void {
+  if (craftPanel) craftPanel.style.display = 'none';
 }
 
 // A small instruction line while placing a ghost.
