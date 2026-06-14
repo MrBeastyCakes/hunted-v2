@@ -4,14 +4,20 @@ import {
   HERO_START_HP,
   MAP_HEIGHT,
   MAP_WIDTH,
+  MOB_PER_HERD,
   MONSTER_SPEED,
   MONSTER_START_HP,
   STARTING_MATERIALS,
+  VILLAGERS_AT_START,
+  WILDLIFE_HERD_COUNT,
 } from './constants';
 import type {
   Building,
   Entity,
   GameState,
+  Herd,
+  Mob,
+  MobSpecies,
   ResourceNode,
   RoleType,
 } from './types';
@@ -69,12 +75,40 @@ export function createInitialState(seed: number): GameState {
     { id: id(), pos: { x: 50, y: 70 }, amount: 100 },
   ];
 
+  const herds: Herd[] = [];
+  const mobs: Mob[] = [];
+  const spawnHerd = (species: MobSpecies, home: { x: number; y: number }, size: number) => {
+    const herdId = id();
+    herds.push({ id: herdId, species, home: { ...home } });
+    for (let i = 0; i < size; i++) {
+      const ang = (i / size) * Math.PI * 2;
+      mobs.push({
+        id: id(),
+        herdId,
+        species,
+        pos: { x: home.x + Math.cos(ang) * 2, y: home.y + Math.sin(ang) * 2 },
+        state: 'calm',
+        fleeTicks: 0,
+      });
+    }
+  };
+
+  const wildlifeHomes = [
+    { x: 18, y: 18 },
+    { x: 82, y: 22 },
+    { x: 50, y: 80 },
+  ];
+  for (let i = 0; i < WILDLIFE_HERD_COUNT; i++) {
+    spawnHerd('wildlife', wildlifeHomes[i % wildlifeHomes.length], MOB_PER_HERD);
+  }
+  spawnHerd('villager', center, VILLAGERS_AT_START);
+
   return {
     tick: 0,
     phase: 'playing',
     rngSeed: seed,
     rngState: seed,
-    map: { width: MAP_WIDTH, height: MAP_HEIGHT, wildlifeNodes, resourceNodes },
+    map: { width: MAP_WIDTH, height: MAP_HEIGHT, wildlifeNodes, resourceNodes, mobs, herds },
     monster,
     heroes,
     buildings,

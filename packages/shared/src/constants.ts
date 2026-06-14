@@ -21,15 +21,27 @@ export const FEED_RANGE = 4; // world units
 export const FEED_RATE = 5; // node amount drained per tick
 export const XP_PER_AMOUNT = 1; // monster XP per amount drained
 
-// --- Evolution ---
-export const STAGE2_XP = 100;
-export const STAGE3_XP = 250;
-export const STAGE3_CITY_DAMAGE_REQ = 50; // must have damaged the city this much to reach stage 3
+// --- Evolution (5 levels; xp required to be AT each stage, index 0 = stage 1) ---
+export const MONSTER_STAGE_XP = [0, 100, 300, 800, 1800];
 export const STAGE_HP_BONUS = 40; // +maxHp (and heal) per stage gained
 export const STAGE_DAMAGE_BONUS = 4; // +combat.damage per stage gained
 
 // --- Combat ---
-export const CITY_DAMAGE_XP = 2; // monster XP per point of building damage dealt
+export const CITY_DAMAGE_XP = 3; // monster XP per point of building damage dealt
+
+// --- Hunting / mobs ---
+export const WILDLIFE_HERD_COUNT = 3;
+export const MOB_PER_HERD = 5;
+export const VILLAGERS_AT_START = 5;
+export const MOB_WANDER_SPEED = 2;
+export const MOB_FLEE_SPEED = 5.5; // just under monster speed (6)
+export const HERD_WANDER_RADIUS = 6;
+export const SCATTER_RADIUS = 10;
+export const SCATTER_TICKS = 40; // 2s at 20Hz
+export const CATCH_RANGE = 1.5;
+export const HERD_RESPAWN_TICKS = 100; // every 5s
+export const WILDLIFE_XP = 25;
+export const VILLAGER_XP = 120;
 
 // --- Economy ---
 export const STARTING_MATERIALS = 60;

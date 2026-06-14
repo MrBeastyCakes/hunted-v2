@@ -1,22 +1,17 @@
-import {
-  STAGE2_XP,
-  STAGE3_XP,
-  STAGE3_CITY_DAMAGE_REQ,
-  STAGE_DAMAGE_BONUS,
-  STAGE_HP_BONUS,
-} from '../constants';
+import { MONSTER_STAGE_XP, STAGE_DAMAGE_BONUS, STAGE_HP_BONUS } from '../constants';
 import type { GameState } from '../types';
 
-// Raises the monster's stage when XP (and, for stage 3, city damage) thresholds are met.
-// One-way: stage never decreases. Each gained stage heals and strengthens the monster.
+// Advances the monster to the highest stage whose XP threshold it has reached (max 5).
+// One-way; each gained stage heals and strengthens the monster.
 export function evolutionSystem(state: GameState): void {
   const m = state.monster;
   if (!m.alive || !m.evolution || !m.combat) return;
   const evo = m.evolution;
 
   let target = 1;
-  if (evo.xp >= STAGE2_XP) target = 2;
-  if (evo.xp >= STAGE3_XP && evo.cityDamageDealt >= STAGE3_CITY_DAMAGE_REQ) target = 3;
+  for (let stage = 1; stage <= MONSTER_STAGE_XP.length; stage++) {
+    if (evo.xp >= MONSTER_STAGE_XP[stage - 1]) target = stage;
+  }
 
   while (evo.stage < target) {
     evo.stage += 1;
