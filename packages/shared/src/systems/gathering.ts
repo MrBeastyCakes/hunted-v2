@@ -1,6 +1,7 @@
 import {
   GATHER_RANGE,
   GATHER_RATE,
+  MATERIALS_CAP,
   NODE_RESPAWN_AMOUNT,
   NODE_RESPAWN_TICKS,
   RESOURCE_NODE_AMOUNT,
@@ -20,7 +21,7 @@ export function gatheringSystem(state: GameState): void {
     if (harvesters === 0) continue;
     const harvest = Math.min(node.amount, GATHER_RATE * harvesters);
     node.amount -= harvest;
-    state.resources.materials += harvest;
+    state.resources.materials = Math.min(MATERIALS_CAP, state.resources.materials + harvest);
   }
 
   if (state.tick > 0 && state.tick % NODE_RESPAWN_TICKS === 0) {

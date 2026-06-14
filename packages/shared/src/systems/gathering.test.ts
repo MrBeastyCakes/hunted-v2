@@ -1,6 +1,6 @@
 import { gatheringSystem } from './gathering';
 import { createInitialState } from '../state';
-import { GATHER_RATE, NODE_RESPAWN_TICKS, RESOURCE_NODE_AMOUNT } from '../constants';
+import { GATHER_RATE, MATERIALS_CAP, NODE_RESPAWN_TICKS, RESOURCE_NODE_AMOUNT } from '../constants';
 
 test('a hero on a resource node harvests it into the materials pool', () => {
   const s = createInitialState(1);
@@ -34,6 +34,15 @@ test('a depleted node yields nothing and is not over-drained', () => {
   gatheringSystem(s);
   expect(node.amount).toBe(0);
   expect(s.resources.materials).toBe(2);
+});
+
+test('gathered materials are clamped at the cap', () => {
+  const s = createInitialState(1);
+  const node = s.map.resourceNodes[0];
+  s.resources.materials = MATERIALS_CAP;
+  s.heroes[0].pos = { ...node.pos };
+  gatheringSystem(s);
+  expect(s.resources.materials).toBe(MATERIALS_CAP);
 });
 
 test('nodes replenish on the respawn tick', () => {

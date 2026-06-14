@@ -1,4 +1,4 @@
-import { BUILDING_HP, TOWER_COMBAT } from '../constants';
+import { BUILDING_CAP, BUILDING_HP, TOWER_COMBAT } from '../constants';
 import { buildCost, type BuildableType } from '../cost';
 import { maxId } from '../ids';
 import type { Building, BuildingType, GameState, InputMap, Vec2 } from '../types';
@@ -23,6 +23,8 @@ export function buildingSystem(state: GameState, inputs: InputMap): void {
     if (!isBuildable(input.buildType)) continue;
 
     const type = input.buildType;
+    const built = state.buildings.filter((b) => b.type === type).length;
+    if (built >= BUILDING_CAP[type]) continue; // at the cap for this type
     const cost = buildCost(hero.role, type);
     if (state.resources.materials < cost) continue;
 

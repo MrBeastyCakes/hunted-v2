@@ -1,6 +1,6 @@
 import { economySystem } from './economy';
 import { createInitialState } from '../state';
-import { ECONOMY_ROLE_BONUS, GENERATOR_RATE } from '../constants';
+import { ECONOMY_ROLE_BONUS, GENERATOR_RATE, MATERIALS_CAP } from '../constants';
 import type { Building } from '../types';
 
 function generator(id: number): Building {
@@ -22,6 +22,13 @@ test('a living economy hero adds a flat income bonus', () => {
   s.resources.materials = 0;
   economySystem(s);
   expect(s.resources.materials).toBe(ECONOMY_ROLE_BONUS);
+});
+
+test('materials are clamped at the cap', () => {
+  const s = createInitialState(123);
+  s.resources.materials = MATERIALS_CAP;
+  economySystem(s);
+  expect(s.resources.materials).toBe(MATERIALS_CAP);
 });
 
 test('a dead economy hero gives no bonus', () => {
