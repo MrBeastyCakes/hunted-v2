@@ -7,7 +7,6 @@ export interface KeyMap {
   down: boolean;
   left: boolean;
   right: boolean;
-  feed: boolean;
   build: boolean;
 }
 
@@ -27,9 +26,7 @@ export function inputFromKeys(actorId: EntityId, keys: KeyMap, buildType?: Build
   if (keys.down) y += 1;
 
   const input: Input = { actorId, move: { x, y } };
-  if (keys.feed) {
-    input.action = 'feed';
-  } else if (keys.build) {
+  if (keys.build) {
     input.action = 'build';
     if (buildType) input.buildType = buildType;
   }
