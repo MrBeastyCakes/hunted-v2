@@ -4,6 +4,7 @@ import { economySystem } from './systems/economy';
 import { equipSystem } from './systems/equip';
 import { evolutionSystem } from './systems/evolution';
 import { buildingSystem } from './systems/building';
+import { gatheringSystem } from './systems/gathering';
 import { herdSystem } from './systems/herd';
 import { huntingSystem } from './systems/hunting';
 import { movementSystem } from './systems/movement';
@@ -19,6 +20,7 @@ export function step(state: GameState, inputs: InputMap): GameState {
   movementSystem(next, inputs);
   herdSystem(next);
   huntingSystem(next);
+  gatheringSystem(next);
   economySystem(next);
   buildingSystem(next, inputs);
   craftingSystem(next, inputs);

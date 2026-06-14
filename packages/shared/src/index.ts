@@ -14,6 +14,7 @@ export { herdSystem } from './systems/herd';
 export { huntingSystem } from './systems/hunting';
 export { craftingSystem } from './systems/crafting';
 export { equipSystem } from './systems/equip';
+export { gatheringSystem } from './systems/gathering';
 export { maxId } from './ids';
 export { botThink, monsterBot, heroBot } from './bots/index';
 export { buildCost } from './cost';
