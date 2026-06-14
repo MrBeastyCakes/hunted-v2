@@ -164,6 +164,13 @@ test('a hero tapping a weapon moves to it (to equip)', () => {
   expect(intent).toEqual({ kind: 'move', point: { x: 40, y: 40 } });
 });
 
+test('the monster tapping itself opens the skill menu', () => {
+  const s = createInitialState(1);
+  s.map.mobs = [];
+  const intent = resolveTapIntent(s, s.monster.id, { ...s.monster.pos }, 3.5);
+  expect(intent).toEqual({ kind: 'openSkillMenu' });
+});
+
 test('a hero tapping a resource node moves to it (to gather)', () => {
   const s = createInitialState(1);
   s.map.mobs = [];
