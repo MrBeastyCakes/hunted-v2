@@ -1,5 +1,7 @@
 import {
   DT,
+  HERD_MIGRATE_STEP,
+  HERD_MIGRATE_TICKS,
   HERD_WANDER_RADIUS,
   MOB_FLEE_SPEED,
   MOB_WANDER_SPEED,
@@ -13,6 +15,16 @@ import type { GameState, Herd } from '../types';
 // Mob movement: herds wander near home, but scatter and flee when the monster is near.
 export function herdSystem(state: GameState): void {
   const m = state.monster;
+
+  // 0. Wildlife herds slowly migrate their home across the map.
+  if (state.tick > 0 && state.tick % HERD_MIGRATE_TICKS === 0) {
+    for (const herd of state.map.herds) {
+      if (herd.species !== 'wildlife') continue;
+      const ang = nextRandom(state) * Math.PI * 2;
+      herd.home.x = clamp(herd.home.x + Math.cos(ang) * HERD_MIGRATE_STEP, 0, state.map.width);
+      herd.home.y = clamp(herd.home.y + Math.sin(ang) * HERD_MIGRATE_STEP, 0, state.map.height);
+    }
+  }
 
   // 1. Which herds are panicked this tick?
   const panicked = new Set<number>();

@@ -8,7 +8,7 @@ import {
 } from '@game/shared';
 
 export interface Pick {
-  kind: 'monster' | 'hero' | 'building' | 'mob' | 'weapon';
+  kind: 'monster' | 'hero' | 'building' | 'mob' | 'weapon' | 'resource';
   id: EntityId;
   pos: Vec2;
 }
@@ -35,6 +35,7 @@ export function pickTarget(state: GameState, world: Vec2, radius: number): Pick 
   for (const b of state.buildings) consider('building', b.id, b.pos);
   for (const mob of state.map.mobs) consider('mob', mob.id, mob.pos);
   for (const w of state.map.weapons) consider('weapon', w.id, w.pos);
+  for (const n of state.map.resourceNodes) if (n.amount > 0) consider('resource', n.id, n.pos);
 
   return best;
 }
@@ -77,7 +78,9 @@ export function resolveTapIntent(
       if (building?.type === 'core') return { kind: 'openBuildMenu' };
       if (building?.type === 'blacksmith') return { kind: 'openCraftMenu' };
     }
-    if (pick.kind === 'weapon') return { kind: 'move', point: { x: pick.pos.x, y: pick.pos.y } };
+    if (pick.kind === 'weapon' || pick.kind === 'resource') {
+      return { kind: 'move', point: { x: pick.pos.x, y: pick.pos.y } };
+    }
   }
   return { kind: 'move', point: world };
 }

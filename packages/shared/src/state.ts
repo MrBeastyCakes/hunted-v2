@@ -7,6 +7,7 @@ import {
   MOB_PER_HERD,
   MONSTER_SPEED,
   MONSTER_START_HP,
+  RESOURCE_NODE_AMOUNT,
   STARTING_MATERIALS,
   UNARMED_DAMAGE,
   UNARMED_RANGE,
@@ -65,9 +66,9 @@ export function createInitialState(seed: number): GameState {
   ];
 
   const resourceNodes: ResourceNode[] = [
-    { id: id(), pos: { x: 40, y: 30 }, amount: 100 },
-    { id: id(), pos: { x: 60, y: 30 }, amount: 100 },
-    { id: id(), pos: { x: 50, y: 70 }, amount: 100 },
+    { id: id(), pos: { x: 40, y: 30 }, amount: RESOURCE_NODE_AMOUNT },
+    { id: id(), pos: { x: 60, y: 30 }, amount: RESOURCE_NODE_AMOUNT },
+    { id: id(), pos: { x: 50, y: 70 }, amount: RESOURCE_NODE_AMOUNT },
   ];
 
   const herds: Herd[] = [];

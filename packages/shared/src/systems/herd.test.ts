@@ -1,6 +1,6 @@
 import { herdSystem } from './herd';
 import { createInitialState } from '../state';
-import { SCATTER_RADIUS } from '../constants';
+import { HERD_MIGRATE_TICKS, SCATTER_RADIUS } from '../constants';
 
 test('a mob far from the monster stays near its herd home (calm)', () => {
   const s = createInitialState(1);
@@ -32,6 +32,27 @@ test('a fleeing mob increases its distance from the monster', () => {
   const after = Math.hypot(mob.pos.x - s.monster.pos.x, mob.pos.y - s.monster.pos.y);
   expect(after).toBeGreaterThan(before);
   expect(SCATTER_RADIUS).toBeGreaterThan(0);
+});
+
+test('a wildlife herd home migrates on the migrate tick', () => {
+  const s = createInitialState(5);
+  s.monster.pos = { x: 0, y: 0 }; // no panic
+  const herd = s.map.herds.find((h) => h.species === 'wildlife')!;
+  const before = { ...herd.home };
+  s.tick = HERD_MIGRATE_TICKS;
+  herdSystem(s);
+  const moved = before.x !== herd.home.x || before.y !== herd.home.y;
+  expect(moved).toBe(true);
+});
+
+test('the villager herd home does not migrate', () => {
+  const s = createInitialState(5);
+  s.monster.pos = { x: 0, y: 0 };
+  const villager = s.map.herds.find((h) => h.species === 'villager')!;
+  const before = { ...villager.home };
+  s.tick = HERD_MIGRATE_TICKS;
+  herdSystem(s);
+  expect(villager.home).toEqual(before);
 });
 
 test('herd movement is deterministic for a given seed', () => {

@@ -71,13 +71,25 @@ test('an armed economy hero builds a generator when safe and able to afford it',
   expect(input.buildType).toBe('generator');
 });
 
-test('an armed defender holds position when near the core and no threat', () => {
+test('an armed hero that cannot afford to build ventures to a resource node', () => {
+  const s = createInitialState(123);
+  const builder = hero(s, 'builder');
+  builder.equipped = 'sword';
+  builder.pos = { x: 50, y: 50 };
+  s.resources.materials = 0; // can't afford a tower
+  const input = heroBot(s, builder);
+  expect(input.action).toBeUndefined();
+  expect(Math.hypot(input.move.x, input.move.y)).toBeGreaterThan(0); // heads to a node
+});
+
+test('an armed defender holds position only when no resource nodes remain', () => {
   const s = createInitialState(123);
   const core = s.buildings.find((b) => b.type === 'core')!;
   const defender = hero(s, 'defender');
   defender.equipped = 'sword';
   defender.pos = { ...core.pos };
   s.resources.materials = 0;
+  s.map.resourceNodes = []; // nothing to gather
   const input = heroBot(s, defender);
   expect(input.move).toEqual({ x: 0, y: 0 });
 });

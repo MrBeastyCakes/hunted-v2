@@ -30,7 +30,7 @@ export const MOB_PER_HERD = 5;
 export const VILLAGERS_AT_START = 5;
 export const MOB_WANDER_SPEED = 2;
 export const MOB_FLEE_SPEED = 5.5; // just under monster speed (6)
-export const HERD_WANDER_RADIUS = 6;
+export const HERD_WANDER_RADIUS = 14; // animals roam wider
 export const SCATTER_RADIUS = 10;
 export const SCATTER_TICKS = 40; // 2s at 20Hz
 export const CATCH_RANGE = 1.5;
@@ -73,6 +73,17 @@ export const WEAPON_DAMAGE: Record<'sword' | 'bow', number> = { sword: 8, bow: 4
 export const CRAFT_COST: Record<'sword' | 'bow', number> = { sword: 30, bow: 45 };
 export const PICKUP_RANGE = 1.2;
 export const RACK_OFFSET = { x: 3, y: -2 };
+
+// --- Gathering ---
+export const GATHER_RANGE = 2.5;
+export const GATHER_RATE = 4; // materials/tick per harvesting hero
+export const RESOURCE_NODE_AMOUNT = 300;
+export const NODE_RESPAWN_TICKS = 300;
+export const NODE_RESPAWN_AMOUNT = 100;
+
+// --- Herd roaming ---
+export const HERD_MIGRATE_TICKS = 120;
+export const HERD_MIGRATE_STEP = 6;
 
 // --- Bots ---
 export const MONSTER_ASSAULT_STAGE = 2; // monster feeds until this stage, then assaults the city

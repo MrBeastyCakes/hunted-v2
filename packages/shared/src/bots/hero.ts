@@ -1,7 +1,16 @@
 import { BUILD_COSTS, CRAFT_COST, HERO_AGGRO_RADIUS, HERO_HOLD_RADIUS } from '../constants';
 import { buildCost } from '../cost';
 import { distance } from '../math';
-import type { BuildingType, Entity, GameState, Input, Vec2, WeaponItem, WeaponType } from '../types';
+import type {
+  BuildingType,
+  Entity,
+  GameState,
+  Input,
+  ResourceNode,
+  Vec2,
+  WeaponItem,
+  WeaponType,
+} from '../types';
 
 function toward(from: Vec2, to: Vec2): Vec2 {
   return { x: to.x - from.x, y: to.y - from.y };
@@ -21,6 +30,20 @@ function nearestWeapon(state: GameState, from: Vec2): WeaponItem | undefined {
     if (d < bestDist) {
       bestDist = d;
       best = w;
+    }
+  }
+  return best;
+}
+
+function nearestResource(state: GameState, from: Vec2): ResourceNode | undefined {
+  let best: ResourceNode | undefined;
+  let bestDist = Infinity;
+  for (const n of state.map.resourceNodes) {
+    if (n.amount <= 0) continue;
+    const d = distance(from, n.pos);
+    if (d < bestDist) {
+      bestDist = d;
+      best = n;
     }
   }
   return best;
@@ -61,6 +84,9 @@ export function heroBot(state: GameState, hero: Entity): Input {
     const buildType: BuildingType = choice;
     return { actorId: id, move: { x: 0, y: 0 }, action: 'build', buildType };
   }
+  // Venture out to gather resources to fund the town.
+  const node = nearestResource(state, hero.pos);
+  if (node) return { actorId: id, move: toward(hero.pos, node.pos) };
   if (core && distance(hero.pos, core.pos) > HERO_HOLD_RADIUS) {
     return { actorId: id, move: toward(hero.pos, core.pos) };
   }
