@@ -1,6 +1,5 @@
 import {
   distance,
-  FEED_RANGE,
   type Entity,
   type EntityId,
   type GameState,
@@ -9,7 +8,7 @@ import {
 } from '@game/shared';
 
 export interface Pick {
-  kind: 'monster' | 'hero' | 'building' | 'wildlife';
+  kind: 'monster' | 'hero' | 'building' | 'mob';
   id: EntityId;
   pos: Vec2;
 }
@@ -34,14 +33,14 @@ export function pickTarget(state: GameState, world: Vec2, radius: number): Pick 
   if (state.monster.alive) consider('monster', state.monster.id, state.monster.pos);
   for (const h of state.heroes) if (h.alive) consider('hero', h.id, h.pos);
   for (const b of state.buildings) consider('building', b.id, b.pos);
-  for (const n of state.map.wildlifeNodes) if (n.amount > 0) consider('wildlife', n.id, n.pos);
+  for (const mob of state.map.mobs) consider('mob', mob.id, mob.pos);
 
   return best;
 }
 
 export type TapIntent =
   | { kind: 'move'; point: Vec2 }
-  | { kind: 'feed'; nodeId: EntityId }
+  | { kind: 'chase'; mobId: EntityId }
   | { kind: 'attack'; point: Vec2 }
   | { kind: 'spectate'; actorId: EntityId }
   | { kind: 'openBuildMenu' };
@@ -66,7 +65,7 @@ export function resolveTapIntent(
 
   const isMonster = controlledId === state.monster.id;
   if (pick) {
-    if (isMonster && pick.kind === 'wildlife') return { kind: 'feed', nodeId: pick.id };
+    if (isMonster && pick.kind === 'mob') return { kind: 'chase', mobId: pick.id };
     if (isMonster && (pick.kind === 'building' || pick.kind === 'hero')) {
       return { kind: 'attack', point: pick.pos };
     }
@@ -81,7 +80,7 @@ export function resolveTapIntent(
 
 export interface PointerControl {
   moveTarget?: Vec2;
-  feedNodeId?: EntityId;
+  chaseMobId?: EntityId;
 }
 
 export function moveTargetToInput(
@@ -100,8 +99,8 @@ export function applyIntent(control: PointerControl, intent: TapIntent): Pointer
     case 'move':
     case 'attack':
       return { moveTarget: { ...intent.point } };
-    case 'feed':
-      return { feedNodeId: intent.nodeId };
+    case 'chase':
+      return { chaseMobId: intent.mobId };
     case 'spectate':
     case 'openBuildMenu':
       return control; // handled elsewhere (camera / build menu), not by movement
@@ -118,14 +117,9 @@ export function controlToInput(
   const actor = findActor(state, controlledId);
   if (!actor) return { actorId: controlledId, move: { x: 0, y: 0 } };
 
-  if (control.feedNodeId !== undefined) {
-    const node = state.map.wildlifeNodes.find((n) => n.id === control.feedNodeId);
-    if (node) {
-      if (distance(actor.pos, node.pos) <= FEED_RANGE) {
-        return { actorId: controlledId, move: { x: 0, y: 0 }, action: 'feed' };
-      }
-      return moveTargetToInput(controlledId, actor.pos, node.pos, arrivalEps);
-    }
+  if (control.chaseMobId !== undefined) {
+    const mob = state.map.mobs.find((m) => m.id === control.chaseMobId);
+    if (mob) return moveTargetToInput(controlledId, actor.pos, mob.pos, arrivalEps);
   }
   if (control.moveTarget) {
     return moveTargetToInput(controlledId, actor.pos, control.moveTarget, arrivalEps);

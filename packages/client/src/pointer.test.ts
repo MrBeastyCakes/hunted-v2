@@ -7,7 +7,7 @@ import {
   resolveTapIntent,
   type PointerControl,
 } from './pointer';
-import { createInitialState, FEED_RANGE } from '@game/shared';
+import { createInitialState } from '@game/shared';
 
 test('findActor returns the monster and heroes by id, undefined otherwise', () => {
   const s = createInitialState(1);
@@ -16,15 +16,16 @@ test('findActor returns the monster and heroes by id, undefined otherwise', () =
   expect(findActor(s, 999999)).toBeUndefined();
 });
 
-test('pickTarget grabs a wildlife node when tapped near it', () => {
+test('pickTarget grabs a mob when tapped near it', () => {
   const s = createInitialState(1);
-  const node = s.map.wildlifeNodes[0];
-  const pick = pickTarget(s, { x: node.pos.x + 0.5, y: node.pos.y }, 3.5);
-  expect(pick).toEqual({ kind: 'wildlife', id: node.id, pos: node.pos });
+  const mob = s.map.mobs[0];
+  const pick = pickTarget(s, { x: mob.pos.x + 0.4, y: mob.pos.y }, 3.5);
+  expect(pick).toEqual({ kind: 'mob', id: mob.id, pos: mob.pos });
 });
 
 test('pickTarget grabs the monster when tapped on it', () => {
   const s = createInitialState(1);
+  s.map.mobs = []; // isolate the monster from nearby mobs
   const pick = pickTarget(s, { ...s.monster.pos }, 3.5);
   expect(pick?.kind).toBe('monster');
   expect(pick?.id).toBe(s.monster.id);
@@ -32,29 +33,28 @@ test('pickTarget grabs the monster when tapped on it', () => {
 
 test('pickTarget returns undefined when the tap is in open space', () => {
   const s = createInitialState(1);
-  // a corner far from everything
+  s.map.mobs = [];
   expect(pickTarget(s, { x: 2, y: 98 }, 3.5)).toBeUndefined();
 });
 
-test('pickTarget ignores dead actors and depleted wildlife', () => {
+test('pickTarget ignores dead actors', () => {
   const s = createInitialState(1);
   s.monster.alive = false;
-  const node = s.map.wildlifeNodes[0];
-  node.amount = 0;
+  s.map.mobs = [];
   expect(pickTarget(s, { ...s.monster.pos }, 3.5)).toBeUndefined();
-  expect(pickTarget(s, { ...node.pos }, 3.5)).toBeUndefined();
 });
 
-test('monster tapping a wildlife node yields a feed intent', () => {
+test('monster tapping a mob yields a chase intent', () => {
   const s = createInitialState(1);
-  const node = s.map.wildlifeNodes[0];
-  const intent = resolveTapIntent(s, s.monster.id, { ...node.pos }, 3.5);
-  expect(intent).toEqual({ kind: 'feed', nodeId: node.id });
+  const mob = s.map.mobs[0];
+  const intent = resolveTapIntent(s, s.monster.id, { ...mob.pos }, 3.5);
+  expect(intent).toEqual({ kind: 'chase', mobId: mob.id });
 });
 
 test('monster tapping a building yields an attack intent at its position', () => {
   const s = createInitialState(1);
   const core = s.buildings.find((b) => b.type === 'core')!;
+  s.map.mobs = []; // so the building is the nearest pick
   const intent = resolveTapIntent(s, s.monster.id, { ...core.pos }, 3.5);
   expect(intent).toEqual({ kind: 'attack', point: core.pos });
 });
@@ -62,6 +62,7 @@ test('monster tapping a building yields an attack intent at its position', () =>
 test('a hero tapping the monster yields an attack intent', () => {
   const s = createInitialState(1);
   const hero = s.heroes[0];
+  s.map.mobs = [];
   const intent = resolveTapIntent(s, hero.id, { ...s.monster.pos }, 3.5);
   expect(intent).toEqual({ kind: 'attack', point: s.monster.pos });
 });
@@ -77,8 +78,25 @@ test('a dead controlled hero tapping an actor yields a spectate intent', () => {
   const hero = s.heroes[0];
   hero.alive = false;
   const ally = s.heroes[1];
+  s.map.mobs = [];
   const intent = resolveTapIntent(s, hero.id, { ...ally.pos }, 3.5);
   expect(intent).toEqual({ kind: 'spectate', actorId: ally.id });
+});
+
+test('a hero tapping the campfire (core) opens the build menu', () => {
+  const s = createInitialState(1);
+  const core = s.buildings.find((b) => b.type === 'core')!;
+  s.map.mobs = [];
+  const intent = resolveTapIntent(s, s.heroes[0].id, { ...core.pos }, 3.5);
+  expect(intent).toEqual({ kind: 'openBuildMenu' });
+});
+
+test('the monster tapping the campfire attacks, not opens a menu', () => {
+  const s = createInitialState(1);
+  const core = s.buildings.find((b) => b.type === 'core')!;
+  s.map.mobs = [];
+  const intent = resolveTapIntent(s, s.monster.id, { ...core.pos }, 3.5);
+  expect(intent).toEqual({ kind: 'attack', point: core.pos });
 });
 
 test('moveTargetToInput points toward the target, zero on arrival', () => {
@@ -88,14 +106,14 @@ test('moveTargetToInput points toward the target, zero on arrival', () => {
   expect(b.move).toEqual({ x: 0, y: 0 });
 });
 
-test('applyIntent sets a move target and clears feeding', () => {
-  const c = applyIntent({ feedNodeId: 9 }, { kind: 'move', point: { x: 3, y: 4 } });
+test('applyIntent sets a move target and clears chasing', () => {
+  const c = applyIntent({ chaseMobId: 9 }, { kind: 'move', point: { x: 3, y: 4 } });
   expect(c).toEqual({ moveTarget: { x: 3, y: 4 } });
 });
 
-test('applyIntent for feed sets the feed node and clears move target', () => {
-  const c = applyIntent({ moveTarget: { x: 1, y: 1 } }, { kind: 'feed', nodeId: 9 });
-  expect(c).toEqual({ feedNodeId: 9 });
+test('applyIntent for chase sets the chase mob and clears move target', () => {
+  const c = applyIntent({ moveTarget: { x: 1, y: 1 } }, { kind: 'chase', mobId: 9 });
+  expect(c).toEqual({ chaseMobId: 9 });
 });
 
 test('controlToInput walks toward a move target', () => {
@@ -107,35 +125,17 @@ test('controlToInput walks toward a move target', () => {
   expect(input.action).toBeUndefined();
 });
 
-test('controlToInput feeds when in range of the feed node, else walks to it', () => {
+test('controlToInput steers toward the chased mob, stops when it is gone', () => {
   const s = createInitialState(1);
-  const node = s.map.wildlifeNodes[0];
-  // out of range -> walks
-  s.monster.pos = { x: node.pos.x + FEED_RANGE + 5, y: node.pos.y };
-  const walking = controlToInput(s, s.monster.id, { feedNodeId: node.id }, 0.6);
-  expect(walking.action).toBeUndefined();
-  expect(walking.move.x).toBeLessThan(0); // moves back toward the node
-  // in range -> feeds
-  s.monster.pos = { ...node.pos };
-  const feeding = controlToInput(s, s.monster.id, { feedNodeId: node.id }, 0.6);
-  expect(feeding.action).toBe('feed');
+  const mob = s.map.mobs[0];
+  s.monster.pos = { x: mob.pos.x - 10, y: mob.pos.y };
+  const chasing = controlToInput(s, s.monster.id, { chaseMobId: mob.id }, 0.6);
+  expect(chasing.move.x).toBeGreaterThan(0); // toward the mob (east)
+  const gone = controlToInput(s, s.monster.id, { chaseMobId: 999999 }, 0.6);
+  expect(gone.move).toEqual({ x: 0, y: 0 });
 });
 
 test('controlToInput with no control is a no-op', () => {
   const s = createInitialState(1);
   expect(controlToInput(s, s.heroes[0].id, {}, 0.6).move).toEqual({ x: 0, y: 0 });
-});
-
-test('a hero tapping the campfire (core) opens the build menu', () => {
-  const s = createInitialState(1);
-  const core = s.buildings.find((b) => b.type === 'core')!;
-  const intent = resolveTapIntent(s, s.heroes[0].id, { ...core.pos }, 3.5);
-  expect(intent).toEqual({ kind: 'openBuildMenu' });
-});
-
-test('the monster tapping the campfire attacks, not opens a menu', () => {
-  const s = createInitialState(1);
-  const core = s.buildings.find((b) => b.type === 'core')!;
-  const intent = resolveTapIntent(s, s.monster.id, { ...core.pos }, 3.5);
-  expect(intent).toEqual({ kind: 'attack', point: core.pos });
 });
