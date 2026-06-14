@@ -1,4 +1,4 @@
-import type { BuildableType, WeaponType } from '@game/shared';
+import type { BuildableType, SkillPath, WeaponType } from '@game/shared';
 
 export interface BlueprintItem {
   type: BuildableType;
@@ -139,6 +139,74 @@ export function showCraftMenu(
 
 export function hideCraftMenu(): void {
   if (craftPanel) craftPanel.style.display = 'none';
+}
+
+export interface SkillChoice {
+  path: SkillPath;
+  rank: number;
+  cost: number;
+  affordable: boolean;
+  maxed: boolean;
+}
+
+let skillPanel: HTMLDivElement | undefined;
+
+function ensureSkillPanel(): HTMLDivElement {
+  if (skillPanel) return skillPanel;
+  skillPanel = document.createElement('div');
+  skillPanel.id = 'skillmenu';
+  Object.assign(skillPanel.style, {
+    position: 'fixed',
+    left: '50%',
+    bottom: '24px',
+    transform: 'translateX(-50%)',
+    display: 'none',
+    gap: '8px',
+    padding: '10px',
+    background: '#161b22ee',
+    border: '1px solid #7ee787',
+    borderRadius: '10px',
+    zIndex: '20',
+  } satisfies Partial<CSSStyleDeclaration>);
+  document.body.appendChild(skillPanel);
+  return skillPanel;
+}
+
+// Shows the monster's skill menu; calls onSelect(path) or onCancel and hides itself.
+export function showSkillMenu(
+  items: SkillChoice[],
+  onSelect: (path: SkillPath) => void,
+  onCancel: () => void,
+): void {
+  const el = ensureSkillPanel();
+  el.innerHTML = '';
+  el.style.display = 'flex';
+  for (const item of items) {
+    const btn = document.createElement('button');
+    btn.textContent = item.maxed
+      ? `${item.path} MAX`
+      : `${item.path} ${item.rank}→${item.rank + 1} (${item.cost})`;
+    const usable = item.affordable && !item.maxed;
+    btn.disabled = !usable;
+    styleButton(btn, usable);
+    btn.addEventListener('click', () => {
+      hideSkillMenu();
+      onSelect(item.path);
+    });
+    el.appendChild(btn);
+  }
+  const cancel = document.createElement('button');
+  cancel.textContent = 'Close';
+  styleButton(cancel, true);
+  cancel.addEventListener('click', () => {
+    hideSkillMenu();
+    onCancel();
+  });
+  el.appendChild(cancel);
+}
+
+export function hideSkillMenu(): void {
+  if (skillPanel) skillPanel.style.display = 'none';
 }
 
 // A small instruction line while placing a ghost.

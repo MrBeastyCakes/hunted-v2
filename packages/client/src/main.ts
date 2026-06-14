@@ -4,10 +4,13 @@ import {
   buildCost,
   CRAFT_COST,
   createInitialState,
+  levelCost,
+  SKILL_MAX_RANK,
   step,
   type BuildingType,
   type GameState,
   type InputMap,
+  type SkillPath,
   type WeaponType,
 } from '@game/shared';
 import {
@@ -41,7 +44,7 @@ import {
   placingTapAction,
   type BuildFlow,
 } from './buildFlow';
-import { setPlacingHint, showBuildMenu, showCraftMenu } from './buildMenu';
+import { setPlacingHint, showBuildMenu, showCraftMenu, showSkillMenu } from './buildMenu';
 import { isActorAlive, nextSpectateTarget, spectatableIds } from './spectate';
 
 async function startGame(side: Side): Promise<void> {
@@ -75,6 +78,8 @@ async function startGame(side: Side): Promise<void> {
   let lastTapPos: { x: number; y: number } | undefined;
   let craftOpen = false;
   let pendingCraft: WeaponType | undefined;
+  let skillOpen = false;
+  let pendingSpend: SkillPath | undefined;
 
   const isCampfireHit = (world: { x: number; y: number }): boolean => {
     const pick = pickTarget(curr, world, PICK_RADIUS);
@@ -87,14 +92,15 @@ async function startGame(side: Side): Promise<void> {
     e.preventDefault();
     const rect = app.canvas.getBoundingClientRect();
     const screen = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    const world = screenToWorld(screen, TILE_W, TILE_H, renderer.cameraOrigin());
+    const tile = renderer.cameraTile();
+    const world = screenToWorld(screen, tile.w, tile.h, renderer.cameraOrigin());
 
     const now = performance.now();
     const doubleTap = isDoubleTap(lastTapMs, lastTapPos, now, screen, DOUBLE_TAP_MS, DOUBLE_TAP_DIST);
     lastTapMs = now;
     lastTapPos = screen;
 
-    if (flow.phase === 'menu' || craftOpen) return; // handled by overlay buttons
+    if (flow.phase === 'menu' || craftOpen || skillOpen) return; // handled by overlay buttons
 
     if (flow.phase === 'placing') {
       const action = placingTapAction(world, doubleTap, flow.ghost, isCampfireHit(world), PICK_RADIUS);
@@ -157,6 +163,30 @@ async function startGame(side: Side): Promise<void> {
       );
       return;
     }
+    if (intent.kind === 'openSkillMenu') {
+      skillOpen = true;
+      const evo = curr.monster.evolution!;
+      const cost = levelCost(evo.level);
+      const paths: SkillPath[] = ['vision', 'hearing', 'smell'];
+      const items = paths.map((path) => ({
+        path,
+        rank: evo.skills[path],
+        cost,
+        affordable: evo.xp >= cost,
+        maxed: evo.skills[path] >= SKILL_MAX_RANK,
+      }));
+      showSkillMenu(
+        items,
+        (path) => {
+          skillOpen = false;
+          pendingSpend = path;
+        },
+        () => {
+          skillOpen = false;
+        },
+      );
+      return;
+    }
     if (intent.kind === 'spectate') {
       cameraTargetId = intent.actorId;
       renderer.setCameraTarget(cameraTargetId);
@@ -206,6 +236,14 @@ async function startGame(side: Side): Promise<void> {
             craftType: pendingCraft,
           };
           pendingCraft = undefined;
+        } else if (pendingSpend) {
+          inputs[controlledId] = {
+            actorId: controlledId,
+            move: { x: 0, y: 0 },
+            action: 'spend',
+            skillPath: pendingSpend,
+          };
+          pendingSpend = undefined;
         } else {
           const k = keyboard.state();
           const keyboardActive = k.up || k.down || k.left || k.right || k.build;
