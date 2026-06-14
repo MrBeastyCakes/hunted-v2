@@ -1,5 +1,14 @@
 import { monsterBot } from './monster';
 import { createInitialState } from '../state';
+import { levelCost } from '../skill';
+
+test('the monster bot spends banked XP on a sense when it can afford a level', () => {
+  const s = createInitialState(123);
+  s.monster.evolution!.xp = levelCost(s.monster.evolution!.level) + 5;
+  const input = monsterBot(s);
+  expect(input.action).toBe('spend');
+  expect(['vision', 'hearing', 'smell']).toContain(input.skillPath);
+});
 
 test('the monster moves toward the nearest mob to hunt it', () => {
   const s = createInitialState(123);

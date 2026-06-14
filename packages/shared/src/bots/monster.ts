@@ -1,5 +1,7 @@
+import { SKILL_MAX_RANK } from '../constants';
 import { distance } from '../math';
-import type { GameState, Input, Mob, Vec2 } from '../types';
+import { levelCost } from '../skill';
+import type { GameState, Input, Mob, SkillPath, Vec2 } from '../types';
 
 function toward(from: Vec2, to: Vec2): Vec2 {
   return { x: to.x - from.x, y: to.y - from.y }; // the sim normalizes direction
@@ -22,6 +24,17 @@ function nearestMob(state: GameState, from: Vec2): Mob | undefined {
 export function monsterBot(state: GameState): Input {
   const m = state.monster;
   const id = m.id;
+
+  // Spend banked XP on the lowest-rank sense when a level is affordable.
+  const evo = m.evolution;
+  if (evo && evo.xp >= levelCost(evo.level)) {
+    const paths: SkillPath[] = ['vision', 'hearing', 'smell'];
+    const available = paths.filter((p) => evo.skills[p] < SKILL_MAX_RANK);
+    if (available.length > 0) {
+      available.sort((a, b) => evo.skills[a] - evo.skills[b]);
+      return { actorId: id, move: { x: 0, y: 0 }, action: 'spend', skillPath: available[0] };
+    }
+  }
 
   const mob = nearestMob(state, m.pos);
   if (mob) return { actorId: id, move: toward(m.pos, mob.pos) };
