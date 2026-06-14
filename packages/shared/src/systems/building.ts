@@ -1,21 +1,16 @@
 import { BUILDING_HP, TOWER_COMBAT } from '../constants';
 import { buildCost, type BuildableType } from '../cost';
+import { maxId } from '../ids';
 import type { Building, BuildingType, GameState, InputMap, Vec2 } from '../types';
 
 function isBuildable(type: BuildingType): type is BuildableType {
-  return type === 'generator' || type === 'tower' || type === 'workshop';
+  return (
+    type === 'generator' || type === 'tower' || type === 'workshop' || type === 'blacksmith'
+  );
 }
 
 function isVec2(t: unknown): t is Vec2 {
   return typeof t === 'object' && t !== null && 'x' in t && 'y' in t;
-}
-
-function maxId(state: GameState): number {
-  let max = state.monster.id;
-  for (const h of state.heroes) max = Math.max(max, h.id);
-  for (const b of state.buildings) max = Math.max(max, b.id);
-  for (const n of state.map.resourceNodes) max = Math.max(max, n.id);
-  return max;
 }
 
 // Heroes with the 'build' action spend shared materials to place structures.
