@@ -1,6 +1,6 @@
 import { combatSystem } from './combat';
 import { createInitialState } from '../state';
-import { WORKSHOP_HERO_DAMAGE_BONUS, TOWER_COMBAT } from '../constants';
+import { PREY_STATS, WORKSHOP_HERO_DAMAGE_BONUS, TOWER_COMBAT } from '../constants';
 import type { Building } from '../types';
 
 test('a hero in range damages the monster and goes on cooldown', () => {
@@ -34,6 +34,19 @@ test('the monster attacks the nearest building', () => {
   const dmg = s.monster.combat!.damage;
   combatSystem(s, { [s.monster.id]: { actorId: s.monster.id, move: { x: 0, y: 0 } } });
   expect(core.health.hp).toBe(startCoreHp - dmg);
+});
+
+test('the monster gains villager XP when it downs a hero', () => {
+  const s = createInitialState(123);
+  s.monster.evolution!.xp = 0;
+  s.map.mobs = [];
+  const victim = s.heroes[0];
+  victim.health.hp = 1;
+  victim.pos = { ...s.monster.pos };
+  for (const h of s.heroes) if (h !== victim) h.pos = { x: 0, y: 0 };
+  combatSystem(s, { [s.monster.id]: { actorId: s.monster.id, move: { x: 0, y: 0 } } });
+  expect(victim.alive).toBe(false);
+  expect(s.monster.evolution!.xp).toBe(PREY_STATS.villager.xp);
 });
 
 test('a tower auto-attacks the monster in range', () => {
