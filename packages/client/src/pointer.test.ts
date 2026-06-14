@@ -163,3 +163,11 @@ test('a hero tapping a weapon moves to it (to equip)', () => {
   const intent = resolveTapIntent(s, s.heroes[0].id, { x: 40, y: 40 }, 3.5);
   expect(intent).toEqual({ kind: 'move', point: { x: 40, y: 40 } });
 });
+
+test('a hero tapping a resource node moves to it (to gather)', () => {
+  const s = createInitialState(1);
+  s.map.mobs = [];
+  const node = s.map.resourceNodes[0];
+  const intent = resolveTapIntent(s, s.heroes[0].id, { ...node.pos }, 3.5);
+  expect(intent).toEqual({ kind: 'move', point: { x: node.pos.x, y: node.pos.y } });
+});
