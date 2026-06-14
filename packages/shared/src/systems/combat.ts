@@ -1,4 +1,4 @@
-import { WORKSHOP_HERO_DAMAGE_BONUS } from '../constants';
+import { PREY_STATS, WORKSHOP_HERO_DAMAGE_BONUS } from '../constants';
 import { distance } from '../math';
 import type { Combat, GameState, Health, InputMap, Vec2 } from '../types';
 
@@ -86,9 +86,11 @@ export function combatSystem(state: GameState, inputs: InputMap): void {
     m.alive = false;
   }
   for (const h of state.heroes) {
-    if (h.health.hp <= 0) {
+    if (h.alive && h.health.hp <= 0) {
       h.health.hp = 0;
       h.alive = false;
+      // The monster feeds on the downed hero (the tastiest prey).
+      if (m.alive && m.evolution) m.evolution.xp += PREY_STATS.villager.xp;
     }
   }
   state.buildings = state.buildings.filter((b) => b.type === 'core' || b.health.hp > 0);
