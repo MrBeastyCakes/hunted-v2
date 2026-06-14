@@ -16,13 +16,11 @@ export const CORE_START_HP = 200;
 
 import type { Combat } from './types';
 
-// --- Evolution (5 levels; xp required to be AT each stage, index 0 = stage 1) ---
-export const MONSTER_STAGE_XP = [0, 100, 300, 800, 1800];
-export const STAGE_HP_BONUS = 40; // +maxHp (and heal) per stage gained
-export const STAGE_DAMAGE_BONUS = 4; // +combat.damage per stage gained
-
-// --- Combat ---
-export const CITY_DAMAGE_XP = 3; // monster XP per point of building damage dealt
+// --- Monster skill tree ---
+export const XP_PER_LEVEL_COST = 25; // cost to reach level n is XP_PER_LEVEL_COST * n
+export const SKILL_MAX_RANK = 4;
+export const LEVEL_HP_BONUS = 25; // +maxHp (and heal) per level gained
+export const LEVEL_DAMAGE_BONUS = 2; // +combat.damage per level gained
 
 // --- Hunting / mobs ---
 export const WILDLIFE_HERD_COUNT = 3;

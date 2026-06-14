@@ -1,6 +1,6 @@
 import { combatSystem } from './combat';
 import { createInitialState } from '../state';
-import { CITY_DAMAGE_XP, WORKSHOP_HERO_DAMAGE_BONUS, TOWER_COMBAT } from '../constants';
+import { WORKSHOP_HERO_DAMAGE_BONUS, TOWER_COMBAT } from '../constants';
 import type { Building } from '../types';
 
 test('a hero in range damages the monster and goes on cooldown', () => {
@@ -24,18 +24,16 @@ test('cooldown blocks a second attack on the next tick', () => {
   expect(s.monster.health.hp).toBe(hpAfterFirst);
 });
 
-test('monster attacks the city core and gains city-damage XP', () => {
+test('the monster attacks the nearest building', () => {
   const s = createInitialState(123);
   const core = s.buildings.find((b) => b.type === 'core')!;
   s.monster.pos = { ...core.pos };
-  // push heroes far away so the core is the nearest target
   for (const h of s.heroes) h.pos = { x: 0, y: 0 };
+  s.map.mobs = [];
   const startCoreHp = core.health.hp;
   const dmg = s.monster.combat!.damage;
   combatSystem(s, { [s.monster.id]: { actorId: s.monster.id, move: { x: 0, y: 0 } } });
   expect(core.health.hp).toBe(startCoreHp - dmg);
-  expect(s.monster.evolution!.cityDamageDealt).toBe(dmg);
-  expect(s.monster.evolution!.xp).toBe(dmg * CITY_DAMAGE_XP);
 });
 
 test('a tower auto-attacks the monster in range', () => {
