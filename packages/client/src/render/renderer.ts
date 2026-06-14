@@ -91,6 +91,11 @@ export class GameRenderer {
       this.dot(project(mob.pos), mob.species === 'villager' ? 4 : 3, color);
     }
 
+    // Weapon pickups on the rack.
+    for (const w of curr.map.weapons) {
+      this.dot(project(w.pos), 4, w.type === 'bow' ? COLORS.bow : COLORS.sword);
+    }
+
     // Buildings.
     for (const b of curr.buildings) {
       const p = project(b.pos);
@@ -125,6 +130,10 @@ export class GameRenderer {
       const color = h.id === this.controlledId ? COLORS.heroControlled : COLORS.hero;
       this.dot(p, 7, color);
       this.hpBar(p.x, p.y - 14, h.health.hp / h.health.maxHp);
+      if (h.equipped) {
+        const ring = h.equipped === 'bow' ? COLORS.bow : COLORS.sword;
+        this.g.circle(p.x, p.y, 9).stroke({ color: ring, width: 1.5 });
+      }
     }
 
     // Monster.

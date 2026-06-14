@@ -2,11 +2,13 @@ import { Application } from 'pixi.js';
 import {
   botThink,
   buildCost,
+  CRAFT_COST,
   createInitialState,
   step,
   type BuildingType,
   type GameState,
   type InputMap,
+  type WeaponType,
 } from '@game/shared';
 import {
   COLORS,
@@ -39,7 +41,7 @@ import {
   placingTapAction,
   type BuildFlow,
 } from './buildFlow';
-import { setPlacingHint, showBuildMenu } from './buildMenu';
+import { setPlacingHint, showBuildMenu, showCraftMenu } from './buildMenu';
 import { isActorAlive, nextSpectateTarget, spectatableIds } from './spectate';
 
 async function startGame(side: Side): Promise<void> {
@@ -71,6 +73,8 @@ async function startGame(side: Side): Promise<void> {
   let pendingBuild: { buildType: BuildingType; target: { x: number; y: number } } | undefined;
   let lastTapMs: number | undefined;
   let lastTapPos: { x: number; y: number } | undefined;
+  let craftOpen = false;
+  let pendingCraft: WeaponType | undefined;
 
   const isCampfireHit = (world: { x: number; y: number }): boolean => {
     const pick = pickTarget(curr, world, PICK_RADIUS);
@@ -90,7 +94,7 @@ async function startGame(side: Side): Promise<void> {
     lastTapMs = now;
     lastTapPos = screen;
 
-    if (flow.phase === 'menu') return; // handled by overlay buttons
+    if (flow.phase === 'menu' || craftOpen) return; // handled by overlay buttons
 
     if (flow.phase === 'placing') {
       const action = placingTapAction(world, doubleTap, flow.ghost, isCampfireHit(world), PICK_RADIUS);
@@ -129,6 +133,26 @@ async function startGame(side: Side): Promise<void> {
         },
         () => {
           flow = buildFlowReducer(flow, { t: 'cancel' }).flow;
+        },
+      );
+      return;
+    }
+    if (intent.kind === 'openCraftMenu') {
+      craftOpen = true;
+      const types: WeaponType[] = ['sword', 'bow'];
+      const items = types.map((type) => ({
+        type,
+        cost: CRAFT_COST[type],
+        affordable: curr.resources.materials >= CRAFT_COST[type],
+      }));
+      showCraftMenu(
+        items,
+        (type) => {
+          craftOpen = false;
+          pendingCraft = type;
+        },
+        () => {
+          craftOpen = false;
         },
       );
       return;
@@ -174,6 +198,14 @@ async function startGame(side: Side): Promise<void> {
             target: pendingBuild.target,
           };
           pendingBuild = undefined;
+        } else if (pendingCraft) {
+          inputs[controlledId] = {
+            actorId: controlledId,
+            move: { x: 0, y: 0 },
+            action: 'craft',
+            craftType: pendingCraft,
+          };
+          pendingCraft = undefined;
         } else {
           const k = keyboard.state();
           const keyboardActive = k.up || k.down || k.left || k.right || k.build;

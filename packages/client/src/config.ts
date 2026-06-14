@@ -20,6 +20,8 @@ export const COLORS = {
   resource: 0x2f81f7,
   hpBack: 0x30363d,
   hpFill: 0x3fb950,
+  sword: 0xe6edf3,
+  bow: 0x9ad1ff,
 } as const;
 
 // Default structure built when the build key is pressed (richer menu deferred).

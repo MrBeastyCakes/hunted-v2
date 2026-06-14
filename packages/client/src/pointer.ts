@@ -8,7 +8,7 @@ import {
 } from '@game/shared';
 
 export interface Pick {
-  kind: 'monster' | 'hero' | 'building' | 'mob';
+  kind: 'monster' | 'hero' | 'building' | 'mob' | 'weapon';
   id: EntityId;
   pos: Vec2;
 }
@@ -34,6 +34,7 @@ export function pickTarget(state: GameState, world: Vec2, radius: number): Pick 
   for (const h of state.heroes) if (h.alive) consider('hero', h.id, h.pos);
   for (const b of state.buildings) consider('building', b.id, b.pos);
   for (const mob of state.map.mobs) consider('mob', mob.id, mob.pos);
+  for (const w of state.map.weapons) consider('weapon', w.id, w.pos);
 
   return best;
 }
@@ -43,7 +44,8 @@ export type TapIntent =
   | { kind: 'chase'; mobId: EntityId }
   | { kind: 'attack'; point: Vec2 }
   | { kind: 'spectate'; actorId: EntityId }
-  | { kind: 'openBuildMenu' };
+  | { kind: 'openBuildMenu' }
+  | { kind: 'openCraftMenu' };
 
 // Maps a tapped world point to an intent, given who the player controls.
 export function resolveTapIntent(
@@ -73,7 +75,9 @@ export function resolveTapIntent(
     if (!isMonster && pick.kind === 'building') {
       const building = state.buildings.find((b) => b.id === pick.id);
       if (building?.type === 'core') return { kind: 'openBuildMenu' };
+      if (building?.type === 'blacksmith') return { kind: 'openCraftMenu' };
     }
+    if (pick.kind === 'weapon') return { kind: 'move', point: { x: pick.pos.x, y: pick.pos.y } };
   }
   return { kind: 'move', point: world };
 }
@@ -103,7 +107,8 @@ export function applyIntent(control: PointerControl, intent: TapIntent): Pointer
       return { chaseMobId: intent.mobId };
     case 'spectate':
     case 'openBuildMenu':
-      return control; // handled elsewhere (camera / build menu), not by movement
+    case 'openCraftMenu':
+      return control; // handled elsewhere (camera / menus), not by movement
   }
 }
 
