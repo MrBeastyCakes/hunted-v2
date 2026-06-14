@@ -12,6 +12,7 @@ test('the monster moves toward the nearest mob to hunt it', () => {
       pos: { x: s.monster.pos.x + 10, y: s.monster.pos.y },
       state: 'calm',
       fleeTicks: 0,
+      hp: 16,
     },
   ];
   const input = monsterBot(s);

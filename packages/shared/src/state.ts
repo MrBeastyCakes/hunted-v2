@@ -4,6 +4,7 @@ import {
   HERO_START_HP,
   MAP_HEIGHT,
   MAP_WIDTH,
+  MOB_HP,
   MOB_PER_HERD,
   MONSTER_SPEED,
   MONSTER_START_HP,
@@ -85,6 +86,7 @@ export function createInitialState(seed: number): GameState {
         pos: { x: home.x + Math.cos(ang) * 2, y: home.y + Math.sin(ang) * 2 },
         state: 'calm',
         fleeTicks: 0,
+        hp: MOB_HP,
       });
     }
   };
