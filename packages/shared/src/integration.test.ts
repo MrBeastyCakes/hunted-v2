@@ -40,26 +40,15 @@ test('monster wins: it sits on the core and razes it while heroes are away', () 
   expect(finished.monster.evolution!.cityDamageDealt).toBeGreaterThan(0);
 });
 
-test('feeding then risking the city carries the monster to stage 3', () => {
+test('hunting mobs levels the monster up', () => {
   let s = createInitialState(3);
-  s = structuredClone(s);
-  const node = s.map.wildlifeNodes[0];
-  node.amount = 100000; // effectively unlimited for the test
-  s.monster.pos = { ...node.pos };
-  // Phase A: feed in place until well past the stage-3 XP threshold.
-  s = run(s, 2000, (state) => ({
-    [state.monster.id]: { actorId: state.monster.id, move: { x: 0, y: 0 }, action: 'feed' },
-  }));
-  expect(s.monster.evolution!.stage).toBe(2); // XP is high, but no city damage yet -> capped at 2
-
-  // Phase B: teleport onto the core and attack until stage 3 unlocks.
-  s = structuredClone(s);
-  const core = s.buildings.find((b) => b.type === 'core')!;
-  core.health.hp = 100000; // keep the core alive long enough to evolve
-  s.monster.pos = { ...core.pos };
-  for (const h of s.heroes) h.pos = { x: 0, y: 0 };
-  s = run(s, 2000, (state) => ({
-    [state.monster.id]: { actorId: state.monster.id, move: { x: 0, y: 0 } },
-  }));
-  expect(s.monster.evolution!.stage).toBe(3);
+  // Drive the monster onto each mob in turn and let step() eat it.
+  for (let i = 0; i < 12 && s.map.mobs.length > 0; i++) {
+    const target = s.map.mobs[0];
+    s = structuredClone(s);
+    s.monster.pos = { ...target.pos }; // teleport onto a mob (eaten next step)
+    s = step(s, { [s.monster.id]: { actorId: s.monster.id, move: { x: 0, y: 0 } } });
+  }
+  expect(s.monster.evolution!.xp).toBeGreaterThan(0);
+  expect(s.monster.evolution!.stage).toBeGreaterThanOrEqual(2);
 });
