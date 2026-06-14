@@ -87,6 +87,30 @@ async function startGame(side: Side): Promise<void> {
     return curr.buildings.find((b) => b.id === pick.id)?.type === 'core';
   };
 
+  const openSkill = (): void => {
+    skillOpen = true;
+    const evo = curr.monster.evolution!;
+    const cost = levelCost(evo.level);
+    const paths: SkillPath[] = ['vision', 'hearing', 'smell'];
+    const items = paths.map((path) => ({
+      path,
+      rank: evo.skills[path],
+      cost,
+      affordable: evo.xp >= cost,
+      maxed: evo.skills[path] >= SKILL_MAX_RANK,
+    }));
+    showSkillMenu(
+      items,
+      (path) => {
+        skillOpen = false;
+        pendingSpend = path;
+      },
+      () => {
+        skillOpen = false;
+      },
+    );
+  };
+
   // Tap/click to move and interact (works for touch and mouse).
   app.canvas.addEventListener('pointerdown', (e) => {
     e.preventDefault();
@@ -164,27 +188,7 @@ async function startGame(side: Side): Promise<void> {
       return;
     }
     if (intent.kind === 'openSkillMenu') {
-      skillOpen = true;
-      const evo = curr.monster.evolution!;
-      const cost = levelCost(evo.level);
-      const paths: SkillPath[] = ['vision', 'hearing', 'smell'];
-      const items = paths.map((path) => ({
-        path,
-        rank: evo.skills[path],
-        cost,
-        affordable: evo.xp >= cost,
-        maxed: evo.skills[path] >= SKILL_MAX_RANK,
-      }));
-      showSkillMenu(
-        items,
-        (path) => {
-          skillOpen = false;
-          pendingSpend = path;
-        },
-        () => {
-          skillOpen = false;
-        },
-      );
+      openSkill();
       return;
     }
     if (intent.kind === 'spectate') {
@@ -203,6 +207,9 @@ async function startGame(side: Side): Promise<void> {
     cameraTargetId = nextSpectateTarget(cameraTargetId, spectatableIds(curr, controlledId)) ?? cameraTargetId;
     renderer.setCameraTarget(cameraTargetId);
   });
+
+  // On spawn, the monster picks its first sense to wake.
+  if (controlledId === curr.monster.id) openSkill();
 
   let accumulatorMs = 0;
   let lastMs = performance.now();

@@ -12,6 +12,7 @@ test('the monster bot spends banked XP on a sense when it can afford a level', (
 
 test('the monster moves toward the nearest mob to hunt it', () => {
   const s = createInitialState(123);
+  s.monster.evolution!.xp = 0; // don't auto-spend; assert movement
   // place a single wildlife mob clearly to the monster's east
   s.map.mobs = [
     {
@@ -32,6 +33,7 @@ test('the monster moves toward the nearest mob to hunt it', () => {
 
 test('with no mobs left, the monster heads for the campfire', () => {
   const s = createInitialState(123);
+  s.monster.evolution!.xp = 0; // don't auto-spend; assert movement
   s.map.mobs = [];
   const core = s.buildings.find((b) => b.type === 'core')!;
   const input = monsterBot(s);
